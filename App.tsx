@@ -1,177 +1,145 @@
-import {
-  CameraMode,
-  CameraType,
-  CameraView,
-  useCameraPermissions,
-} from "expo-camera";
-import { useRef, useState } from "react";
-import { Button, Pressable, StyleSheet, Text, View, Alert} from "react-native";
-import { Image } from "expo-image";
-import { AntDesign } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
-import { FontAwesome6 } from "@expo/vector-icons";
-import * as FileSystem from 'expo-file-system';
-import { Video } from 'expo-av';
+import React from 'react';
+import "./global.css";
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View } from 'react-native';
 
-const SERVER_URL = 'http://44.202.160.166:3000/upload/';
+// Import screens
+import HomeScreen from './src/screens/HomeScreen';
+import ScanningScreen from './src/screens/ScanningScreen';
+import AnalysisScreen from './src/screens/AnalysisScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import AIRecommendationScreen from './src/screens/AIRecommendationScreen';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+
+// Import context
+import { AuthProvider } from './src/context/AuthContext';
+
+// Define navigation types
+export type RootStackParamList = {
+  Onboarding: undefined;
+  Auth: undefined;
+  Main: undefined;
+  Analysis: { scanId: string };
+  AIRecommendation: { analysisId: string };
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Scan: undefined;
+  Profile: undefined;
+  Settings: undefined;
+};
+
+// Create navigators
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Auth navigator component
+const AuthNavigator = () => {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
+  );
+};
+
+// Main tab navigator component
+const MainNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          if (route.name === 'Home') {
+            return <Ionicons name="home" size={size} color={color} />;
+          } else if (route.name === 'Scan') {
+            return <MaterialCommunityIcons name="heart-pulse" size={size} color={color} />;
+          } else if (route.name === 'Profile') {
+            return <FontAwesome5 name="user-alt" size={size} color={color} />;
+          } else if (route.name === 'Settings') {
+            return <Ionicons name="settings-sharp" size={size} color={color} />;
+          }
+          return null;
+        },
+        tabBarActiveTintColor: '#ec4899',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: false,
+        tabBarStyle: {
+          paddingVertical: 5,
+          borderTopLeftRadius: 15,
+          borderTopRightRadius: 15,
+          backgroundColor: 'white',
+          position: 'absolute',
+          borderTopColor: '#f3f4f6',
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          paddingBottom: 5,
+          fontSize: 12,
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Scan" component={ScanningScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+};
 
 export default function App() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const ref = useRef<CameraView>(null);
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [recording, setRecording] = useState(false);
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-
-  if (!permission) {
-    return null;
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
-        </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
-      </View>
-    );
-  }
-
-  const saveVideo = async (videoUri:string) => {
-    try {
-      const newUri = FileSystem.documentDirectory + `my_video.mp4`;
-      await FileSystem.moveAsync({ from: videoUri, to: newUri });
-      setVideoUri(newUri);
-      console.log('Video saved at:', newUri);
-      return newUri;
-    } catch (error) {
-      console.error('Error saving video:', error);
-    }
-  };
-
-  const uploadVideo = async (videoUri: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: videoUri,
-        name: 'video.mp4',
-        type: 'video/mp4',
-      });
-  
-      const uploadResponse = await fetch(SERVER_URL, {
-        method: "POST",
-        body: formData,
-        headers: {'Content-Type': 'multipart/form-data'},
-      });
-  
-      const data = await uploadResponse.json();
-      console.log("Upload success:", data);
-      Alert.alert("Success", "Video uploaded successfully!");
-    } catch (error) {
-      console.error("Upload failed:", error);
-      Alert.alert("Error", "Failed to upload video.");
-    }
-  };
-  
-  const recordVideo = async () => {
-    if (recording) {
-      setRecording(false);
-      ref.current?.stopRecording();
-      return;
-    }
-  
-    setRecording(true);
-    const video = await ref.current?.recordAsync();
-    const new_uri = await saveVideo(video.uri);
-    await uploadVideo(new_uri);
-  };
-
-  const toggleFacing = () => {
-    setFacing((prev) => (prev === "back" ? "front" : "back"));
-  };
-
-  const renderCamera = () => {
-    return (
-      <CameraView
-        style={styles.camera}
-        ref={ref}
-        mode="video"
-        facing={facing}
-        mute={false}
-        responsiveOrientationWhenOrientationLocked
-      >
-        <View style={styles.shutterContainer}>
-          <View style={[{width: 32}]}></View>
-          <Pressable onPress={recordVideo}>
-            {({ pressed }) => (
-              <View style={[styles.shutterBtn,{ opacity: pressed ? 0.5 : 1}]}>
-                <View style={[styles.shutterBtnInner, {backgroundColor: recording ? "white" : "red"}]}/>
-              </View>
-            )}
-          </Pressable>
-          <Pressable onPress={toggleFacing}>
-            <FontAwesome6 name="rotate-left" size={32} color="white" />
-          </Pressable>
-        </View>
-      </CameraView>
-    );
-  };
-
-  const renderVideo = () => {
-    return (
-      <View>
-        <Video
-          source={{ uri: videoUri }}
-          style={{ width: 300, height: 200 }}
-          useNativeControls
-          shouldPlay
-        />
-        <Button onPress={() => setVideoUri(null)} title="Take another video" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {videoUri ? renderVideo() : renderCamera()}
+    <View style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              <Stack.Screen name="Auth" component={AuthNavigator} />
+              <Stack.Screen name="Main" component={MainNavigator} />
+              <Stack.Screen 
+                name="Analysis" 
+                component={AnalysisScreen} 
+                options={{ 
+                  headerShown: true, 
+                  headerTitle: 'Health Analysis',
+                  headerTintColor: '#ec4899',
+                  headerStyle: {
+                    backgroundColor: 'white',
+                  },
+                }} 
+              />
+              <Stack.Screen 
+                name="AIRecommendation" 
+                component={AIRecommendationScreen} 
+                options={{ 
+                  headerShown: true, 
+                  headerTitle: 'AI Recommendations',
+                  headerTintColor: '#ec4899',
+                  headerStyle: {
+                    backgroundColor: 'white',
+                  },
+                }} 
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AuthProvider>
+      </SafeAreaProvider>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  camera: {
-    flex: 1,
-    width: "100%",
-  },
-  shutterContainer: {
-    position: "absolute",
-    bottom: 44,
-    left: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
-  },
-  shutterBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 5,
-    borderColor: "white",
-    width: 85,
-    height: 85,
-    borderRadius: 45,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterBtnInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 50,
-  },
-});
