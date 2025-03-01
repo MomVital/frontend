@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
+  Scan: undefined;
   Analysis: { scanId: string };
   AIRecommendation: { analysisId: string };
 };
@@ -108,9 +109,7 @@ export default function App() {
         <AuthProvider>
           <NavigationContainer>
             <StatusBar style="auto" />
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-              <Stack.Screen name="Auth" component={AuthNavigator} />
+            <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Main" component={MainNavigator} />
               <Stack.Screen 
                 name="Analysis" 

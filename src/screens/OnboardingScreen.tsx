@@ -34,12 +34,28 @@ const OnboardingScreen: React.FC = () => {
     if (currentPage < onboardingData.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
-      navigation.navigate('Auth');
+      console.log('Navigating to Auth screen');
+      try {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Auth' }],
+        });
+      } catch (error) {
+        console.error('Navigation error:', error);
+      }
     }
   };
 
   const handleSkip = () => {
-    navigation.navigate('Auth');
+    console.log('Skipping to Auth screen');
+    try {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   return (

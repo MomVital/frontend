@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -46,10 +46,10 @@ const mockTips = [
   },
 ];
 
-const HomeScreen = () => {
+const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -71,176 +71,102 @@ const HomeScreen = () => {
 
   const weeksRemaining = calculateWeeksRemaining();
 
+  // Mock data for health metrics
+  const healthMetrics = [
+    { name: 'Heart Rate', value: '72', unit: 'bpm', icon: 'heart-outline' },
+    { name: 'Blood Pressure', value: '120/80', unit: 'mmHg', icon: 'fitness-outline' },
+    { name: 'Sleep', value: '7.5', unit: 'hours', icon: 'bed-outline' },
+    { name: 'Steps', value: '6,542', unit: 'steps', icon: 'footsteps-outline' },
+  ];
+
+  // Mock data for recent scans
+  const recentScans = [
+    { id: '1', date: 'Today, 9:30 AM', type: 'Heart Rate Variability' },
+    { id: '2', date: 'Yesterday, 8:15 PM', type: 'Stress Level' },
+  ];
+
+  const handleScanPress = (scanId: string) => {
+    // @ts-ignore
+    navigation.navigate('Analysis', { scanId });
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView
+    <SafeAreaView className="flex-1 bg-white">
+      <ScrollView 
         className="flex-1"
-        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ec4899" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header with user info */}
-        <LinearGradient
-          colors={['#ec4899', '#db2777']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          className="px-4 pt-4 pb-8 rounded-b-3xl"
-        >
-          <View className="flex-row justify-between items-center mb-4">
+        <View className="p-6">
+          {/* Header */}
+          <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-white text-lg font-semibold">Hello,</Text>
-              <Text className="text-white text-2xl font-bold">{user?.name || 'Mom'}</Text>
+              <Text className="text-2xl font-bold text-gray-800">Hello, {user?.name || 'Sarah'}</Text>
+              <Text className="text-gray-600">Week {user?.pregnancyWeek || 24} of Pregnancy</Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('Main', { screen: 'Profile' })}>
-              {user?.profilePicture ? (
-                <Image
-                  source={{ uri: user.profilePicture }}
-                  className="w-12 h-12 rounded-full border-2 border-white"
-                />
-              ) : (
-                <View className="w-12 h-12 rounded-full bg-white/30 items-center justify-center">
-                  <Ionicons name="person" size={24} color="white" />
-                </View>
-              )}
+            <TouchableOpacity className="bg-gray-100 p-2 rounded-full">
+              <Ionicons name="notifications-outline" size={24} color="#ec4899" />
             </TouchableOpacity>
           </View>
 
-          <View className="bg-white/20 rounded-xl p-4 mb-2">
-            <View className="flex-row justify-between items-center">
-              <View>
-                <Text className="text-white text-sm opacity-80">Current pregnancy</Text>
-                <Text className="text-white text-xl font-bold">Week {user?.pregnancyWeek || 0}</Text>
-              </View>
-              <View>
-                <Text className="text-white text-sm opacity-80">Remaining</Text>
-                <Text className="text-white text-xl font-bold">{weeksRemaining} weeks</Text>
-              </View>
+          {/* Health Summary Card */}
+          <View className="bg-primary-50 p-5 rounded-xl mb-6">
+            <Text className="text-lg font-semibold text-primary-800 mb-4">Today's Health Summary</Text>
+            <View className="flex-row flex-wrap justify-between">
+              {healthMetrics.map((metric, index) => (
+                <View key={index} className="w-[48%] bg-white p-4 rounded-lg mb-3">
+                  <View className="flex-row items-center mb-2">
+                    <Ionicons name={metric.icon as any} size={20} color="#ec4899" />
+                    <Text className="text-gray-600 ml-2">{metric.name}</Text>
+                  </View>
+                  <Text className="text-2xl font-bold text-gray-800">{metric.value}</Text>
+                  <Text className="text-gray-500">{metric.unit}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Quick Actions */}
+          <View className="mb-6">
+            <Text className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</Text>
+            <View className="flex-row justify-between">
               <TouchableOpacity 
-                className="bg-white/30 rounded-full p-2"
-                onPress={() => {/* Navigate to pregnancy details */}}
+                className="bg-secondary-50 p-4 rounded-xl items-center w-[48%]"
+                // @ts-ignore
+                onPress={() => navigation.navigate('Scan')}
               >
-                <Ionicons name="calendar" size={20} color="white" />
+                <Ionicons name="pulse" size={24} color="#0ea5e9" />
+                <Text className="text-secondary-800 mt-2 font-medium">New Scan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                className="bg-accent-50 p-4 rounded-xl items-center w-[48%]"
+                // @ts-ignore
+                onPress={() => navigation.navigate('AIRecommendation', { analysisId: 'latest' })}
+              >
+                <Ionicons name="bulb-outline" size={24} color="#f97316" />
+                <Text className="text-accent-800 mt-2 font-medium">AI Insights</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </LinearGradient>
 
-        {/* Quick action buttons */}
-        <View className="flex-row justify-between px-4 -mt-5">
-          <TouchableOpacity 
-            className="bg-white rounded-xl p-3 shadow-sm flex-1 mr-2 items-center"
-            onPress={() => navigation.navigate('Scan')}
-          >
-            <Ionicons name="heart" size={24} color="#ec4899" />
-            <Text className="text-gray-800 font-medium mt-1">Scan Now</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            className="bg-white rounded-xl p-3 shadow-sm flex-1 ml-2 items-center"
-            onPress={() => {/* Navigate to history */}}
-          >
-            <Ionicons name="time" size={24} color="#0ea5e9" />
-            <Text className="text-gray-800 font-medium mt-1">History</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Health metrics section */}
-        <View className="px-4 mt-6">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-lg font-bold text-gray-800">Health Metrics</Text>
-            <TouchableOpacity>
-              <Text className="text-primary-500 font-medium">See All</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row mb-3">
-            <View className="flex-1 mr-2">
-              <HealthMetricCard
-                type="heart-rate"
-                value={mockHealthData.heartRate.value}
-                unit={mockHealthData.heartRate.unit}
-                trend={mockHealthData.heartRate.trend}
-                trendValue={mockHealthData.heartRate.trendValue}
-                onPress={() => navigation.navigate('Analysis', { scanId: 'latest' })}
-              />
-            </View>
-            <View className="flex-1 ml-2">
-              <HealthMetricCard
-                type="hrv"
-                value={mockHealthData.hrv.value}
-                unit={mockHealthData.hrv.unit}
-                trend={mockHealthData.hrv.trend}
-                trendValue={mockHealthData.hrv.trendValue}
-                trendIsGood={mockHealthData.hrv.trendIsGood}
-                onPress={() => navigation.navigate('Analysis', { scanId: 'latest' })}
-              />
-            </View>
-          </View>
-
-          <View className="flex-row mb-3">
-            <View className="flex-1 mr-2">
-              <HealthMetricCard
-                type="stress"
-                value={mockHealthData.stress.value}
-                trend={mockHealthData.stress.trend}
-                trendValue={mockHealthData.stress.trendValue}
-                trendIsGood={mockHealthData.stress.trendIsGood}
-                onPress={() => navigation.navigate('Analysis', { scanId: 'latest' })}
-              />
-            </View>
-            <View className="flex-1 ml-2">
-              <HealthMetricCard
-                type="emotion"
-                value={mockHealthData.emotion.value}
-                trend={mockHealthData.emotion.trend}
-                onPress={() => navigation.navigate('Analysis', { scanId: 'latest' })}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* AI Recommendations */}
-        <View className="px-4 mt-4">
-          <Text className="text-lg font-bold text-gray-800 mb-3">AI Recommendations</Text>
-          <Card variant="elevated">
-            <View className="flex-row items-center mb-3">
-              <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3">
-                <Ionicons name="bulb" size={20} color="#ec4899" />
-              </View>
-              <View>
-                <Text className="text-gray-800 font-semibold">Personalized Insights</Text>
-                <Text className="text-gray-500 text-sm">Based on your recent health data</Text>
-              </View>
-            </View>
-            <Text className="text-gray-700 mb-3">
-              Your stress levels have decreased this week. Keep up with your relaxation techniques and gentle exercise.
-            </Text>
-            <Button 
-              title="View Full Recommendations" 
-              variant="outline" 
-              size="sm"
-              onPress={() => navigation.navigate('AIRecommendation', { analysisId: 'latest' })}
-            />
-          </Card>
-        </View>
-
-        {/* Daily Tips */}
-        <View className="px-4 mt-6 mb-8">
-          <Text className="text-lg font-bold text-gray-800 mb-3">Daily Tips</Text>
-          {mockTips.map((tip) => (
-            <Card key={tip.id} variant="outlined" style={{ marginBottom: 10 }}>
-              <View className="flex-row">
-                <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3">
-                  <Ionicons name={tip.icon as any} size={20} color="#ec4899" />
+          {/* Recent Scans */}
+          <View>
+            <Text className="text-lg font-semibold text-gray-800 mb-4">Recent Scans</Text>
+            {recentScans.map((scan) => (
+              <TouchableOpacity 
+                key={scan.id}
+                className="bg-gray-50 p-4 rounded-lg mb-3 flex-row justify-between items-center"
+                onPress={() => handleScanPress(scan.id)}
+              >
+                <View>
+                  <Text className="text-gray-800 font-medium">{scan.type}</Text>
+                  <Text className="text-gray-500">{scan.date}</Text>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-gray-800 font-semibold">{tip.title}</Text>
-                  <Text className="text-gray-600 text-sm mt-1">{tip.description}</Text>
-                </View>
-              </View>
-            </Card>
-          ))}
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,16 +1,18 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
-type User = {
+// Define the shape of the user object
+interface User {
   id: string;
   name: string;
   email: string;
   pregnancyWeek: number;
   dueDate: string;
   profilePicture?: string;
-};
+}
 
-type AuthContextType = {
+// Define the shape of the context
+interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isSignedIn: boolean;
@@ -18,9 +20,18 @@ type AuthContextType = {
   signUp: (name: string, email: string, password: string, pregnancyWeek: number, dueDate: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
-};
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: false,
+  isSignedIn: false,
+  signIn: async () => {},
+  signUp: async () => {},
+  signOut: async () => {},
+  updateUser: async () => {},
+});
 
 // Mock user data
 const MOCK_USER: User = {
@@ -32,53 +43,42 @@ const MOCK_USER: User = {
   profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+// Create a provider component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(MOCK_USER); // Set mock user by default
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const bootstrapAsync = async () => {
-      try {
-        const userJson = await SecureStore.getItemAsync('user');
-        if (userJson) {
-          setUser(JSON.parse(userJson));
-        }
-      } catch (e) {
-        console.error('Failed to load user from storage', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    bootstrapAsync();
-  }, []);
-
+  // Mock login function
   const signIn = async (email: string, password: string) => {
-    // In a real app, you would validate credentials with your API
     setIsLoading(true);
     try {
-      // Mock API call
+      // In a real app, you would make an API call here
+      console.log('Logging in with:', { email, password });
+      
+      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo purposes, we'll just set the mock user
-      await SecureStore.setItemAsync('user', JSON.stringify(MOCK_USER));
+      // Set mock user data
       setUser(MOCK_USER);
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('Login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Mock register function
   const signUp = async (name: string, email: string, password: string, pregnancyWeek: number, dueDate: string) => {
-    // In a real app, you would register the user with your API
     setIsLoading(true);
     try {
-      // Mock API call
+      // In a real app, you would make an API call here
+      console.log('Registering with:', { name, email, password, pregnancyWeek, dueDate });
+      
+      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Set mock user data
       const newUser: User = {
         id: '2', // In a real app, this would come from the backend
         name,
@@ -90,20 +90,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('user', JSON.stringify(newUser));
       setUser(newUser);
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error('Registration error:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Logout function
   const signOut = async () => {
     setIsLoading(true);
     try {
       await SecureStore.deleteItemAsync('user');
       setUser(null);
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('Logout error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -124,26 +125,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isSignedIn: !!user,
-        signIn,
-        signUp,
-        signOut,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, isSignedIn: !!user, signIn, signUp, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}; 
+// Create a hook to use the auth context
+export const useAuth = () => useContext(AuthContext); 
