@@ -1,4 +1,4 @@
-# ReadMe
+# README
 
 ## How to run this project
 1. Ensure Node version 20+
