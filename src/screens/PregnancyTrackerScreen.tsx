@@ -13,6 +13,37 @@ import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import { mockUser, mockPregnancyMilestones } from '../utils/mockData';
 
+// Define interfaces for health data
+interface HealthMetricWithChange {
+  value: number;
+  change: string;
+}
+
+interface StressMetric extends HealthMetricWithChange {
+  label: string;
+}
+
+interface EmotionMetric {
+  value: string;
+  previous: string;
+}
+
+interface HealthData {
+  heartRate: HealthMetricWithChange;
+  hrv: HealthMetricWithChange;
+  stress: StressMetric;
+  emotion: EmotionMetric;
+}
+
+// Extend the milestone interface to include health data
+interface Milestone {
+  week: number;
+  title: string;
+  description: string;
+  tips: string;
+  healthData?: HealthData;
+}
+
 type PregnancyTrackerScreenNavigationProp = StackNavigationProp<RootStackParamList, 'PregnancyTracker'>;
 
 const PregnancyTrackerScreen: React.FC = () => {
@@ -222,12 +253,86 @@ const PregnancyTrackerScreen: React.FC = () => {
             </Typography>
             
             <TipContainer>
-              <Ionicons name="bulb-outline" size={24} color={theme.colors.primary} />
-              <Typography variant="body2" marginLeft="sm">
+              <Ionicons name="bulb-outline" size={20} color={theme.colors.primary} />
+              <Typography variant="body2" marginRight="md">
                 <Typography variant="body2" weight="bold">Tip: </Typography>
                 {milestone.tips}
               </Typography>
             </TipContainer>
+            
+            {/* Health History Data */}
+            {milestone.healthData && (
+              <HealthDataContainer>
+                <Typography variant="body2" weight="bold" marginBottom="xs" color={theme.colors.primary}>
+                  Health Data This Week
+                </Typography>
+                
+                <HealthMetricsGrid>
+                  {/* Heart Rate */}
+                  <HealthMetricItem>
+                    <HealthMetricIcon>
+                      <MaterialCommunityIcons name="heart-pulse" size={18} color={theme.colors.primary} />
+                    </HealthMetricIcon>
+                    <HealthMetricValue>
+                      <Typography variant="body2" weight="bold">
+                        {milestone.healthData.heartRate.value} 
+                        <Typography variant="caption" color={milestone.healthData.heartRate.change.startsWith('+') ? theme.colors.success : theme.colors.error}>
+                          {' '}{milestone.healthData.heartRate.change}
+                        </Typography>
+                      </Typography>
+                      {/* <Typography variant="caption">BPM</Typography> */}
+                    </HealthMetricValue>
+                  </HealthMetricItem>
+                  
+                  {/* HRV */}
+                  <HealthMetricItem>
+                    <HealthMetricIcon>
+                      <MaterialCommunityIcons name="heart" size={18} color={theme.colors.primary} />
+                    </HealthMetricIcon>
+                    <HealthMetricValue>
+                      <Typography variant="body2" weight="bold">
+                        {milestone.healthData.hrv.value}
+                        <Typography variant="caption" color={milestone.healthData.hrv.change.startsWith('+') ? theme.colors.success : theme.colors.error}>
+                          {' '}{milestone.healthData.hrv.change}
+                        </Typography>
+                      </Typography>
+                      {/* <Typography variant="caption">ms</Typography> */}
+                    </HealthMetricValue>
+                  </HealthMetricItem>
+                  
+                  {/* Stress Level */}
+                  <HealthMetricItem>
+                    <HealthMetricIcon>
+                      <MaterialCommunityIcons name="lightning-bolt" size={18} color={theme.colors.primary} />
+                    </HealthMetricIcon>
+                    <HealthMetricValue>
+                      <Typography variant="body2" weight="bold">
+                        {milestone.healthData.stress.label}
+                        <Typography variant="caption" color={milestone.healthData.stress.change.startsWith('+') ? theme.colors.error : theme.colors.success}>
+                          {' '}{milestone.healthData.stress.change}%
+                        </Typography>
+                      </Typography>
+                      {/* <Typography variant="caption">Stress</Typography> */}
+                    </HealthMetricValue>
+                  </HealthMetricItem>
+                  
+                  {/* Emotional State */}
+                  <HealthMetricItem>
+                    <HealthMetricIcon>
+                      <MaterialCommunityIcons name="emoticon-outline" size={18} color={theme.colors.primary} />
+                    </HealthMetricIcon>
+                    <HealthMetricValue>
+                      <Typography variant="body2" weight="bold">
+                        {milestone.healthData.emotion.value}
+                      </Typography>
+                      {/* <Typography variant="caption">
+                        from {milestone.healthData.emotion.previous}
+                      </Typography> */}
+                    </HealthMetricValue>
+                  </HealthMetricItem>
+                </HealthMetricsGrid>
+              </HealthDataContainer>
+            )}
           </MilestoneCard>
         ))}
 
@@ -351,6 +456,32 @@ const TipContainer = styled(View)`
   background-color: ${theme.colors.background};
   padding: ${theme.spacing.sm}px;
   border-radius: ${theme.borderRadius.sm}px;
+`;
+
+const HealthDataContainer = styled(View)`
+  background-color: ${theme.colors.background};
+  padding: ${theme.spacing.md}px;
+  border-radius: ${theme.borderRadius.md}px;
+  margin-top: ${theme.spacing.sm}px;
+`;
+
+const HealthMetricsGrid = styled(View)`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: ${theme.spacing.md}px;
+`;
+
+const HealthMetricItem = styled(View)`
+  align-items: center;
+  width: 25%;
+`;
+
+const HealthMetricIcon = styled(View)`
+  margin-bottom: ${theme.spacing.xs}px;
+`;
+
+const HealthMetricValue = styled(View)`
+  align-items: center;
 `;
 
 const EmptyStateContainer = styled(View)`
