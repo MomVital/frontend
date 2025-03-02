@@ -4,18 +4,19 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { View } from 'react-native';
 
 import { RootStackParamList, TabParamList } from './src/navigation/types';
 import { theme } from './src/theme/theme';
 import HomeScreen from './src/screens/HomeScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
-
-// Import placeholder screens (we'll implement these later)
-const AiSuggestionsScreen = () => <></>;
-const ProfileScreen = () => <></>;
-const RegistrationScreen = () => <></>;
-const SettingsScreen = () => <></>;
+import AiSuggestionsScreen from './src/screens/AiSuggestionsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import RegistrationScreen from './src/screens/RegistrationScreen';
+import PregnancyTrackerScreen from './src/screens/PregnancyTrackerScreen';
+import Logo from './src/components/Logo';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -23,6 +24,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const HomeStack = () => {
   return (
     <Stack.Navigator
+      id="HomeStack"
       screenOptions={{
         headerStyle: {
           backgroundColor: theme.colors.primary,
@@ -60,6 +62,7 @@ const HomeStack = () => {
 const TabNavigator = () => {
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.gray,
@@ -88,7 +91,19 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: 'Scan',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="heart-pulse" color={color} size={size} />
+            <View style={{ marginTop: -5 }}>
+              <Logo size="small" showText={false} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TrackerTab"
+        component={PregnancyTrackerScreen}
+        options={{
+          tabBarLabel: 'Tracker',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" color={color} size={size} />
           ),
         }}
       />
@@ -108,7 +123,10 @@ const TabNavigator = () => {
 
 const RootStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      id="RootStack"
+      screenOptions={{ headerShown: false }}
+    >
       <Stack.Screen name="Main" component={TabNavigator} />
       <Stack.Screen 
         name="Registration" 
@@ -128,6 +146,30 @@ const RootStack = () => {
         options={{ 
           headerShown: true,
           title: 'Health Scan',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Settings',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="PregnancyTracker" 
+        component={PregnancyTrackerScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Pregnancy Tracker',
           headerStyle: {
             backgroundColor: theme.colors.primary,
           },

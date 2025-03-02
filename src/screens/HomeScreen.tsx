@@ -12,6 +12,8 @@ import Button from '../components/Button';
 import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import { mockUser, mockHealthData, mockAiSuggestions, mockPregnancyMilestones } from '../utils/mockData';
+import PregnancyDayTracker from '../components/PregnancyDayTracker';
+import Logo from '../components/Logo';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -32,12 +34,18 @@ const HomeScreen: React.FC = () => {
             Week {mockUser.pregnancyWeek} of Pregnancy
           </Typography>
         </WelcomeSection>
-        <ProfileImageContainer>
-          <ProfileImage source={{ uri: mockUser.profileImage }} />
-        </ProfileImageContainer>
+        <LogoContainer>
+          <Logo size="small" showText={false} color={theme.colors.white} />
+        </LogoContainer>
       </Header>
 
       <ContentContainer>
+        {/* Pregnancy Day Tracker */}
+        <PregnancyDayTracker 
+          currentWeek={mockUser.pregnancyWeek} 
+          dueDate={mockUser.dueDate} 
+        />
+
         {/* Pregnancy Milestone Card */}
         <Card variant="elevated" marginBottom="md">
           <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">
@@ -191,6 +199,13 @@ const ProfileImage = styled(Image)`
   height: 100%;
 `;
 
+const LogoContainer = styled(View)`
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+`;
+
 const ContentContainer = styled(View)`
   padding: ${theme.spacing.md}px;
 `;
@@ -242,7 +257,8 @@ const SuggestionCard = styled(Card)<{ importance: string }>`
 const SuggestionHeader = styled(View)`
   flex-direction: row;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  width: 100%;
 `;
 
 const ImportanceBadge = styled(View)<{ importance: string }>`
@@ -253,6 +269,8 @@ const ImportanceBadge = styled(View)<{ importance: string }>`
   }};
   padding: ${theme.spacing.xs}px ${theme.spacing.sm}px;
   border-radius: ${theme.borderRadius.round}px;
+  align-self: flex-start;
+  margin-left: ${theme.spacing.sm}px;
 `;
 
 const ScanButtonContainer = styled(View)`

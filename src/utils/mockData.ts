@@ -159,27 +159,123 @@ export const mockHealthInsights = [
 // Mock pregnancy milestones
 export const mockPregnancyMilestones = [
   {
-    week: 24,
-    title: 'Baby is the size of a corn',
-    description: 'Your baby is about 30cm long and weighs around 600 grams. Their face is fully formed, complete with eyelashes, eyebrows, and hair.',
-    tips: 'Stay hydrated and continue with gentle exercise like prenatal yoga or swimming.',
+    week: 4,
+    title: "Embryo Formation",
+    description: "Your baby is now called an embryo and is about the size of a poppy seed. The neural tube, which will become the brain and spinal cord, is developing.",
+    tips: "Start taking prenatal vitamins if you haven't already. Folic acid is especially important at this stage."
   },
   {
-    week: 25,
-    title: 'Baby is the size of a rutabaga',
-    description: 'Your baby\'s hands are now fully developed, and they\'re spending more time awake practicing breathing movements.',
-    tips: 'Start planning your maternity leave and consider taking a childbirth education class.',
+    week: 6,
+    title: "Heartbeat Begins",
+    description: "Your baby's heart begins to beat around 6 weeks. The embryo is about the size of a lentil (0.25 inches).",
+    tips: "Schedule your first prenatal appointment if you haven't already."
+  },
+  {
+    week: 8,
+    title: "All Essential Organs Form",
+    description: "All essential organs have begun to develop. Your baby is now about the size of a kidney bean (0.5 inches).",
+    tips: "Maintain a balanced diet rich in fruits, vegetables, and proteins to support your baby's rapid development."
+  },
+  {
+    week: 10,
+    title: "Embryo to Fetus",
+    description: "Your baby is now called a fetus. Tiny fingers and toes are forming, and the neural tube has closed.",
+    tips: "Stay hydrated and continue with gentle exercise if your doctor approves."
+  },
+  {
+    week: 12,
+    title: "First Trimester Complete",
+    description: "Your baby is about 2.5 inches long and weighs about 0.5 ounces. External genitalia are developing.",
+    tips: "The risk of miscarriage drops significantly after the first trimester. You may start feeling more energetic."
+  },
+  {
+    week: 14,
+    title: "Baby's Sex Becomes Visible",
+    description: "Your baby's sex may be visible on an ultrasound. The fetus is about 3.5 inches long and can make facial expressions.",
+    tips: "You may notice your energy returning as you enter the second trimester."
+  },
+  {
+    week: 16,
+    title: "Baby Can Hear You",
+    description: "Your baby can hear your voice now. The fetus is about 4.5 inches long and weighs about 3.5 ounces.",
+    tips: "Talk or sing to your baby - they can hear you now and will recognize your voice after birth."
+  },
+  {
+    week: 18,
+    title: "Baby Starts Moving",
+    description: "You might start feeling your baby move (quickening). The fetus is about 5.5 inches long and weighs about 7 ounces.",
+    tips: "Start doing pelvic floor exercises (Kegels) to strengthen muscles for delivery and recovery."
+  },
+  {
+    week: 20,
+    title: "Halfway Point",
+    description: "You're halfway through your pregnancy! Your baby is about 6.5 inches long and weighs about 10 ounces.",
+    tips: "This is typically when you'll have an anatomy scan ultrasound to check your baby's development."
+  },
+  {
+    week: 22,
+    title: "Baby's Senses Developing",
+    description: "Your baby's sense of touch, taste, sight, hearing, and smell are developing. The fetus is about 11 inches long.",
+    tips: "Start planning your maternity leave and discussing childcare options if needed."
+  },
+  {
+    week: 24,
+    title: "Viability Milestone",
+    description: "Your baby has reached a significant milestone - if born now, they would have a chance of survival with intensive care.",
+    tips: "Consider signing up for childbirth classes if you haven't already."
   },
   {
     week: 26,
-    title: 'Baby is the size of a scallion',
-    description: 'Your baby\'s eyes will open soon, and they can respond to external sounds and your voice.',
-    tips: 'Begin doing pelvic floor exercises regularly to prepare for delivery.',
+    title: "Baby Opens Eyes",
+    description: "Your baby's eyes open for the first time. The fetus is about 14 inches long and weighs about 1.7 pounds.",
+    tips: "Start monitoring your baby's movement patterns. Contact your healthcare provider if you notice decreased movement."
   },
   {
-    week: 27,
-    title: 'Baby is the size of a cauliflower',
-    description: 'Your baby is gaining weight rapidly and can now hiccup, which you might feel as rhythmic movements.',
-    tips: 'Start thinking about your birth plan and discuss it with your healthcare provider.',
+    week: 28,
+    title: "Brain Development Accelerates",
+    description: "Your baby's brain is developing rapidly. The fetus is about 14.8 inches long and weighs about 2.2 pounds.",
+    tips: "Rest when you can and sleep on your side to improve blood flow to your baby."
   },
+  {
+    week: 30,
+    title: "Baby Gains Weight",
+    description: "Your baby is gaining weight rapidly. The fetus is about 15.7 inches long and weighs about 3 pounds.",
+    tips: "Start preparing your home for the baby's arrival. Consider creating a birth plan if you haven't already."
+  },
+  {
+    week: 32,
+    title: "Baby's Movements Change",
+    description: "Your baby's movements may change as they have less room to move. The fetus is about 16.7 inches long and weighs about 4 pounds.",
+    tips: "Pack your hospital bag and make sure your car seat is properly installed."
+  },
+  {
+    week: 34,
+    title: "Lungs Nearly Mature",
+    description: "Your baby's lungs are nearly mature. The fetus is about 17.7 inches long and weighs about 5 pounds.",
+    tips: "Finalize your birth plan and discuss it with your healthcare provider."
+  },
+  {
+    week: 36,
+    title: "Baby Drops Lower",
+    description: "Your baby may drop lower into your pelvis (lightening). The fetus is about 18.7 inches long and weighs about 6 pounds.",
+    tips: "Watch for signs of labor, including regular contractions, water breaking, or bloody show."
+  },
+  {
+    week: 38,
+    title: "Full Term",
+    description: "Your baby is considered full term. The fetus is about 19.6 inches long and weighs about 7 pounds.",
+    tips: "Rest as much as possible and stay hydrated. Labor could begin any day now."
+  },
+  {
+    week: 40,
+    title: "Due Date",
+    description: "Your baby is ready to be born! The average newborn is about 20 inches long and weighs about 7.5 pounds.",
+    tips: "Don't worry if you go past your due date. Many first-time mothers deliver after their due date."
+  },
+  {
+    week: 42,
+    title: "Post-Term Pregnancy",
+    description: "Your pregnancy is now considered post-term. Your healthcare provider will monitor you and your baby closely.",
+    tips: "Discuss induction options with your healthcare provider if you haven't delivered by now."
+  }
 ]; 

@@ -12,6 +12,7 @@ import Button from '../components/Button';
 import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import { mockHealthData } from '../utils/mockData';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 type AnalysisScreenRouteProp = RouteProp<RootStackParamList, 'Analysis'>;
 type AnalysisScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Analysis'>;
@@ -22,6 +23,20 @@ const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisScreenRouteProp>();
   const navigation = useNavigation<AnalysisScreenNavigationProp>();
   const scanId = route.params?.scanId;
+
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <LoadingIndicator fullScreen color={theme.colors.primary} />;
+  }
 
   const handleViewSuggestions = () => {
     navigation.navigate('AiSuggestions', { scanId });

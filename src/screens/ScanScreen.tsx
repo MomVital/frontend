@@ -11,6 +11,7 @@ import Typography from '../components/Typography';
 import Button from '../components/Button';
 import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
@@ -66,6 +67,10 @@ const ScanScreen: React.FC = () => {
       );
     }, 3000);
   };
+
+  if (isScanning) {
+    return <LoadingIndicator fullScreen color={theme.colors.primary} />;
+  }
 
   return (
     <Container backgroundColor={theme.colors.black} safeArea={false}>

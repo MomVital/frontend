@@ -1,64 +1,60 @@
 import React, { ReactNode } from 'react';
-import { View, SafeAreaView, ScrollView } from 'react-native';
+import { View, ScrollView, SafeAreaView } from 'react-native';
 import styled from 'styled-components/native';
 import { theme } from '../theme/theme';
 
 interface ContainerProps {
   children: ReactNode;
-  padding?: keyof typeof theme.spacing;
-  backgroundColor?: string;
   scroll?: boolean;
-  safeArea?: boolean;
   center?: boolean;
+  backgroundColor?: string;
+  safeArea?: boolean;
+  padding?: keyof typeof theme.spacing;
 }
 
 const Container: React.FC<ContainerProps> = ({
   children,
-  padding = 'md',
-  backgroundColor = theme.colors.background,
   scroll = false,
-  safeArea = true,
   center = false,
+  backgroundColor = theme.colors.background,
+  safeArea = true,
+  padding,
 }) => {
   const content = (
-    <StyledView padding={padding} backgroundColor={backgroundColor} center={center}>
+    <ContainerView
+      center={center}
+      backgroundColor={backgroundColor}
+      padding={padding}
+    >
       {children}
-    </StyledView>
+    </ContainerView>
   );
 
-  if (safeArea && scroll) {
-    return (
-      <StyledSafeAreaView backgroundColor={backgroundColor}>
-        <StyledScrollView>{content}</StyledScrollView>
-      </StyledSafeAreaView>
-    );
-  }
-
-  if (safeArea) {
-    return (
-      <StyledSafeAreaView backgroundColor={backgroundColor}>
-        {content}
-      </StyledSafeAreaView>
-    );
-  }
-
   if (scroll) {
-    return <StyledScrollView backgroundColor={backgroundColor}>{content}</StyledScrollView>;
+    return safeArea ? (
+      <StyledSafeAreaView backgroundColor={backgroundColor}>
+        <ScrollContainer showsVerticalScrollIndicator={false}>
+          {content}
+        </ScrollContainer>
+      </StyledSafeAreaView>
+    ) : (
+      <ScrollContainer 
+        showsVerticalScrollIndicator={false}
+        backgroundColor={backgroundColor}
+      >
+        {content}
+      </ScrollContainer>
+    );
   }
 
-  return content;
+  return safeArea ? (
+    <StyledSafeAreaView backgroundColor={backgroundColor}>
+      {content}
+    </StyledSafeAreaView>
+  ) : (
+    content
+  );
 };
-
-const StyledView = styled(View)<{
-  padding: keyof typeof theme.spacing;
-  backgroundColor: string;
-  center: boolean;
-}>`
-  flex: 1;
-  padding: ${({ padding }) => `${theme.spacing[padding]}px`};
-  background-color: ${({ backgroundColor }) => backgroundColor};
-  ${({ center }) => center && 'justify-content: center; align-items: center;'}
-`;
 
 const StyledSafeAreaView = styled(SafeAreaView)<{
   backgroundColor: string;
@@ -67,11 +63,23 @@ const StyledSafeAreaView = styled(SafeAreaView)<{
   background-color: ${({ backgroundColor }) => backgroundColor};
 `;
 
-const StyledScrollView = styled(ScrollView)<{
+const ScrollContainer = styled(ScrollView)<{
   backgroundColor?: string;
 }>`
   flex: 1;
-  background-color: ${({ backgroundColor }) => backgroundColor || 'transparent'};
+  background-color: ${({ backgroundColor }) => backgroundColor || theme.colors.background};
+`;
+
+const ContainerView = styled(View)<{
+  center: boolean;
+  backgroundColor: string;
+  padding?: keyof typeof theme.spacing;
+}>`
+  flex: 1;
+  background-color: ${({ backgroundColor }) => backgroundColor};
+  justify-content: ${({ center }) => (center ? 'center' : 'flex-start')};
+  align-items: ${({ center }) => (center ? 'center' : 'stretch')};
+  padding: ${({ padding }) => padding ? `${theme.spacing[padding]}px` : '0px'};
 `;
 
 export default Container; 
