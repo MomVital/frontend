@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { View, Alert, Pressable } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Alert, Pressable, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import styled from 'styled-components/native';
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
 
 import Container from '../components/Container';
 import Typography from '../components/Typography';
@@ -15,12 +16,46 @@ import LoadingIndicator from '../components/LoadingIndicator';
 
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
+// Backend API URL
+const API_URL = 'http://ip_address:3000/analyze/';
+const RECORDING_DURATION = 30; // seconds
+
 const ScanScreen: React.FC = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [cameraType, setCameraType] = useState<'front' | 'back'>('front');
+  const [isUploading, setIsUploading] = useState(false);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+  
   const cameraRef = useRef<CameraView>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  // Animation for the progress circle
+  useEffect(() => {
+    if (isRecording) {
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: RECORDING_DURATION * 1000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      animatedValue.setValue(0);
+    }
+  }, [isRecording, animatedValue]);
 
   if (!permission) {
     // Camera permissions are still loading
@@ -47,30 +82,129 @@ const ScanScreen: React.FC = () => {
     setCameraType(current => (current === 'back' ? 'front' : 'back'));
   };
 
-  const handleScan = async () => {
-    setIsScanning(true);
-    
-    // Simulate scanning process
-    setTimeout(() => {
-      setIsScanning(false);
+  const startRecording = async () => {
+    if (cameraRef.current) {
+      setIsRecording(true);
+      setRecordingTime(0);
       
-      // Mock successful scan
-      Alert.alert(
-        "Scan Complete",
-        "Your health data has been successfully analyzed.",
-        [
-          { 
-            text: "View Results", 
-            onPress: () => navigation.navigate('Analysis', { scanId: 'mock-scan-123' }) 
+      try {
+        // Start recording video
+        const { uri } = await cameraRef.current.recordAsync();
+        setVideoUri(uri);
+        console.log('Recording saved to:', uri);
+      } catch (error) {
+        console.error('Failed to record video:', error);
+        Alert.alert('Error', 'Failed to record video');
+        setIsRecording(false);
+      }
+      
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= RECORDING_DURATION) {
+            stopRecording();
           }
-        ]
-      );
-    }, 3000);
+          return newTime;
+        });
+      }, 1000);
+    }
   };
 
-  if (isScanning) {
-    return <LoadingIndicator fullScreen color={theme.colors.primary} />;
+  const stopRecording = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    if (cameraRef.current && isRecording) {
+      try {
+        await cameraRef.current.stopRecording();
+        setIsRecording(false);
+        
+        // If we have a video URI, upload it
+        if (videoUri) {
+          uploadVideo(videoUri);
+        }
+      } catch (error) {
+        console.error('Failed to stop recording:', error);
+        setIsRecording(false);
+      }
+    }
+  };
+
+  const uploadVideo = async (uri: string) => {
+    setIsUploading(true);
+    
+    try {
+      // Create form data for the video upload
+      const formData = new FormData();
+      formData.append('video', {
+        uri,
+        name: 'scan_video.mp4',
+        type: 'video/mp4',
+      } as any);
+      
+      // Upload to backend
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Upload successful:', data);
+      
+      // Navigate to analysis screen with the scan ID from the response
+      navigation.navigate('Analysis', { scanId: data.scanId || 'mock-scan-123' });
+    } catch (error) {
+      console.error('Failed to upload video:', error);
+      Alert.alert(
+        'Upload Error',
+        'Failed to upload the video for analysis. Would you like to try again?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Try Again', onPress: () => uploadVideo(uri) }
+        ]
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleScan = async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  if (isUploading) {
+    return (
+      <Container center>
+        <LoadingIndicator fullScreen color={theme.colors.primary} />
+        <Typography variant="h3" color={theme.colors.primary} marginTop="xl">
+          Uploading and Analyzing...
+        </Typography>
+        <Typography variant="body1" marginTop="md">
+          Please wait while we process your scan
+        </Typography>
+      </Container>
+    );
   }
+
+  // Calculate the progress for the circle animation
+  const circleProgress = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 360],
+  });
 
   return (
     <Container backgroundColor={theme.colors.black} safeArea={false}>
@@ -78,6 +212,7 @@ const ScanScreen: React.FC = () => {
         style={{ flex: 1 }}
         ref={cameraRef}
         facing={cameraType}
+        videoStabilizationMode="standard"
       >
         <ScanOverlay>
           <ScanHeader>
@@ -85,12 +220,14 @@ const ScanScreen: React.FC = () => {
               Face Scan
             </Typography>
             <Typography variant="body1" color={theme.colors.white} align="center" marginTop="xs">
-              Position your face in the frame
+              {isRecording 
+                ? `Recording: ${recordingTime}/${RECORDING_DURATION} seconds` 
+                : 'Position your face in the frame'}
             </Typography>
           </ScanHeader>
           
           <ScanFrame>
-            {isScanning && (
+            {isRecording && (
               <ScanningIndicator>
                 <ScanningLine />
                 <Typography variant="body2" color={theme.colors.white} align="center" marginTop="sm">
@@ -101,24 +238,55 @@ const ScanScreen: React.FC = () => {
           </ScanFrame>
           
           <ControlsContainer>
-            <ControlButton onPress={toggleCameraType}>
-              <FontAwesome5 name="sync-alt" size={24} color={theme.colors.white} />
-              <Typography variant="caption" color={theme.colors.white} marginTop="xs">
+            <ControlButton onPress={toggleCameraType} disabled={isRecording}>
+              <FontAwesome5 
+                name="sync-alt" 
+                size={24} 
+                color={isRecording ? theme.colors.lightGray : theme.colors.white} 
+              />
+              <Typography 
+                variant="caption" 
+                color={isRecording ? theme.colors.lightGray : theme.colors.white} 
+                marginTop="xs"
+              >
                 Flip
               </Typography>
             </ControlButton>
             
-            <ScanButton onPress={handleScan} disabled={isScanning}>
-              <ScanButtonInner isScanning={isScanning}>
-                {isScanning && (
-                  <MaterialCommunityIcons name="heart-pulse" size={32} color={theme.colors.white} />
-                )}
-              </ScanButtonInner>
+            <ScanButton onPress={handleScan}>
+              <ProgressCircle>
+                <AnimatedCircle 
+                  style={{
+                    transform: [{ rotate: circleProgress.interpolate({
+                      inputRange: [0, 360],
+                      outputRange: ['0deg', '360deg'],
+                    })}]
+                  }}
+                />
+                <ScanButtonInner isRecording={isRecording}>
+                  {isRecording ? (
+                    <FontAwesome5 name="stop" size={24} color={theme.colors.white} />
+                  ) : (
+                    <MaterialCommunityIcons name="heart-pulse" size={32} color={theme.colors.primary} />
+                  )}
+                </ScanButtonInner>
+              </ProgressCircle>
+              <Typography variant="caption" color={theme.colors.white} marginTop="sm">
+                {isRecording ? `${recordingTime}s` : 'Start Scan'}
+              </Typography>
             </ScanButton>
             
-            <ControlButton onPress={() => navigation.goBack()}>
-              <FontAwesome5 name="times" size={24} color={theme.colors.white} />
-              <Typography variant="caption" color={theme.colors.white} marginTop="xs">
+            <ControlButton onPress={() => navigation.goBack()} disabled={isRecording}>
+              <FontAwesome5 
+                name="times" 
+                size={24} 
+                color={isRecording ? theme.colors.lightGray : theme.colors.white} 
+              />
+              <Typography 
+                variant="caption" 
+                color={isRecording ? theme.colors.lightGray : theme.colors.white} 
+                marginTop="xs"
+              >
                 Cancel
               </Typography>
             </ControlButton>
@@ -173,26 +341,42 @@ const ControlsContainer = styled(View)`
   margin-bottom: ${theme.spacing.xl}px;
 `;
 
-const ControlButton = styled(Pressable)`
+const ControlButton = styled(Pressable)<{ disabled?: boolean }>`
   align-items: center;
   padding: ${theme.spacing.sm}px;
+  opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
 `;
 
-const ScanButton = styled(Pressable)<{ disabled: boolean }>`
+const ScanButton = styled(Pressable)`
+  align-items: center;
+`;
+
+const ProgressCircle = styled(View)`
   width: 80px;
   height: 80px;
   border-radius: 40px;
   background-color: rgba(255, 255, 255, 0.2);
   justify-content: center;
   align-items: center;
-  opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
+  position: relative;
 `;
 
-const ScanButtonInner = styled(View)<{ isScanning: boolean }>`
+const AnimatedCircle = styled(Animated.View)`
+  width: 80px;
+  height: 80px;
+  border-radius: 40px;
+  border-width: 3px;
+  border-color: ${theme.colors.primary};
+  position: absolute;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+`;
+
+const ScanButtonInner = styled(View)<{ isRecording: boolean }>`
   width: 60px;
   height: 60px;
   border-radius: 30px;
-  background-color: ${({ isScanning }) => isScanning ? theme.colors.primary : theme.colors.white};
+  background-color: ${({ isRecording }) => isRecording ? theme.colors.error : theme.colors.white};
   justify-content: center;
   align-items: center;
 `;
