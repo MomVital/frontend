@@ -12,16 +12,13 @@ This document outlines the API integration between the MomVital frontend and bac
 - **Response**:
   ```json
   {
-    "timesES": [int, int, ...],
-    "bpmES": [float, float, ...],
-    "nni_seq": [float, float, ...],
-    "hrv_results": {
-      "sdnn": float,
-      "rmssd": float,
-      "pnn50": float,
-      "lf": float,
-      "hf": float,
-      "lf_hf_ratio": float
+    "message": "Processing complete",
+    "results": {
+      "sdnn": number,
+      "bpms": number,
+      "rmssd": number,
+      "pnn50": number,
+      "stress_level": number
     }
   }
   ```
@@ -33,18 +30,12 @@ This document outlines the API integration between the MomVital frontend and bac
 - **Request Body**:
   ```json
   {
-    "timesES": [int, int, ...],
-    "bpmES": [float, float, ...],
-    "nni_seq": [float, float, ...],
-    "hrv_results": {
-      "sdnn": float,
-      "rmssd": float,
-      "pnn50": float,
-      "lf": float,
-      "hf": float,
-      "lf_hf_ratio": float
-    },
-    "week": int
+    "bpms": number,
+    "sdnn": number,
+    "rmssd": number,
+    "pnn50": number,
+    "stress_level": number,
+    "week": number
   }
   ```
 
@@ -134,5 +125,32 @@ The API service includes error handling for:
 - Network failures
 - Invalid responses
 - Timeout issues
+- Local API unavailability
 
-In case of errors, the application will fall back to mock data to ensure a smooth user experience. 
+### Local API Fallback
+
+The application is designed to continue functioning even if the local API is not available:
+
+1. When saving analysis data to the local API fails, the application logs a warning but continues with the flow.
+2. The data with the pregnancy week is still used for subsequent API calls.
+3. This ensures that the user experience is not interrupted even if the local storage mechanism is unavailable.
+
+### Graceful Degradation
+
+The application implements graceful degradation in several ways:
+
+1. **API Call Failures**: If any individual API call fails, the application continues with default values.
+2. **Promise.allSettled**: Used for parallel API calls to ensure that if one call fails, others can still succeed.
+3. **Default Values**: Meaningful default values are provided for all analysis results in case of API failures.
+4. **Mock Data Fallback**: The application can fall back to mock data if real backend connections fail.
+
+## Troubleshooting
+
+If you encounter the "[API] Error saving analysis data" message:
+
+1. Check that your local API server is running at `http://localhost:8081/healthdata`
+2. Verify network connectivity between your app and the local API
+3. Ensure the local API accepts the data format being sent
+4. The app will continue to function despite this error, but data will not be saved locally
+
+If you need to disable the local API call entirely, you can modify the `saveAnalysisData` function in `apiService.ts` to always return the data with the week added without attempting to save it. 

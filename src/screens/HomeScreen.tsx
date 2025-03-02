@@ -46,21 +46,8 @@ const HomeScreen: React.FC = () => {
           dueDate={mockUser.dueDate} 
         />
 
-        {/* Pregnancy Milestone Card */}
-        <Card variant="elevated" marginBottom="md">
-          <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">
-            This Week's Milestone
-          </Typography>
-          <Typography variant="h4" marginBottom="xs">
-            {currentMilestone?.title}
-          </Typography>
-          <Typography variant="body1" marginBottom="md">
-            {currentMilestone?.description}
-          </Typography>
-        </Card>
-
-        {/* Quick Health Stats */}
-        <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">
+                {/* Quick Health Stats */}
+                <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">
           Your Health Today
         </Typography>
         <StatsContainer>
@@ -118,6 +105,19 @@ const HomeScreen: React.FC = () => {
             View Detailed Analysis →
           </Typography>
         </TouchableOpacity>
+        
+        {/* Pregnancy Milestone Card */}
+        <Card variant="elevated" marginBottom="md">
+          <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">
+            This Week's Milestone
+          </Typography>
+          <Typography variant="h4" marginBottom="xs">
+            {currentMilestone?.title}
+          </Typography>
+          <Typography variant="body1" marginBottom="md">
+            {currentMilestone?.description}
+          </Typography>
+        </Card>
 
         {/* AI Suggestions */}
         <Typography variant="h3" color={theme.colors.primary} marginBottom="sm">

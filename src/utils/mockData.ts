@@ -12,7 +12,7 @@ export const mockUser = {
 // Mock health data
 export const mockHealthData = {
   heartRate: {
-    current: 82,
+    current: 79,
     min: 65,
     max: 95,
     average: 78,

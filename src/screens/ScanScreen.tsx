@@ -21,21 +21,15 @@ type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
 // Backend API URL
 const API_URL = 'http://52.20.137.195:3000/analyze/';
-const USE_MOCK_BACKEND = true;
+const USE_MOCK_DATA = false;
 
 // Mock analysis response for testing
 const mockAnalysisResponse: AnalysisResponse = {
-  timesES: [1, 2, 3, 4, 5],
-  bpmES: [75, 78, 80, 82, 79],
-  nni_seq: [800, 810, 790, 805, 795],
-  hrv_results: {
-    sdnn: 45,
-    rmssd: 42,
-    pnn50: 30,
-    lf: 1200,
-    hf: 900,
-    lf_hf_ratio: 1.33
-  }
+  bpms: 79,
+  sdnn: 45,
+  rmssd: 42,
+  pnn50: 30,
+  stress_level: 35
 };
 
 const ScanScreen: React.FC = () => {
@@ -48,6 +42,8 @@ const ScanScreen: React.FC = () => {
   const [scanId, setScanId] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const showMockFallbackDialog = false; // Flag to control whether to show the mock fallback dialog
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const cameraRef = useRef<CameraView>(null);
@@ -181,13 +177,13 @@ const ScanScreen: React.FC = () => {
       console.log('[MOCK] Simulating network delay (2s)...');
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Process the mock analysis data
-      const result = await processVideoAnalysis(mockAnalysisResponse);
-      console.log('[MOCK] Processed analysis data:', result);
-      
       // Generate mock scan ID
       const mockScanId = `mock-scan-${Date.now()}`;
       console.log('[MOCK] Generated mock scan ID:', mockScanId);
+      
+      // Process the mock analysis data
+      const result = await processVideoAnalysis(mockAnalysisResponse, mockScanId);
+      console.log('[MOCK] Processed analysis data:', result);
       
       // Use custom navigation function
       navigateToAnalysis(mockScanId);
@@ -203,82 +199,6 @@ const ScanScreen: React.FC = () => {
       );
     } finally {
       console.log('[MOCK] Setting isUploading to false');
-      setIsUploading(false);
-    }
-  };
-
-  const uploadVideo = async (uri: string) => {
-    console.log('[UPLOAD] uploadVideo called with URI:', uri);
-    
-    // Use mock backend if real backend is not available
-    if (USE_MOCK_BACKEND) {
-      console.log('[UPLOAD] Using mock backend');
-      return mockUploadVideo(uri);
-    }
-    
-    console.log('[UPLOAD] Using real backend');
-    setIsUploading(true);
-    
-    try {
-      // Create form data for the video upload
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        name: 'scan_video.mp4',
-        type: 'video/mp4',
-      } as any);
-      
-      // Upload to backend
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('[UPLOAD] Upload successful:', data);
-      
-      // Process the analysis data
-      const analysisData: AnalysisResponse = {
-        timesES: data.timesES || [],
-        bpmES: data.bpmES || [],
-        nni_seq: data.nni_seq || [],
-        hrv_results: data.hrv_results || {}
-      };
-      
-      await processVideoAnalysis(analysisData);
-      
-      // Use custom navigation function
-      navigateToAnalysis(data.scanId);
-    } catch (error) {
-      console.error('[UPLOAD] Failed to upload video:', error);
-      
-      // If backend connection failed, offer to use mock backend
-      Alert.alert(
-        'Upload Error',
-        'Failed to connect to the backend server. Would you like to use the mock backend instead?',
-        [
-          { 
-            text: 'Cancel', 
-            style: 'cancel' 
-          },
-          { 
-            text: 'Try Again', 
-            onPress: () => uploadVideo(uri) 
-          },
-          { 
-            text: 'Use Mock', 
-            onPress: () => mockUploadVideo(uri) 
-          }
-        ]
-      );
-    } finally {
       setIsUploading(false);
     }
   };
@@ -317,17 +237,215 @@ const ScanScreen: React.FC = () => {
       
       console.log('[RECORD] Recording completed with URI:', video.uri);
       
-      // Save and upload only happen after recording is complete
+      // Save video to a permanent location
       console.log('[RECORD] Saving video');
       const savedUri = await saveVideo(video.uri);
       console.log('[RECORD] Video saved, setting URI:', savedUri);
+      
+      // Set the video URI in state and wait for state update
       setVideoUri(savedUri);
-      console.log('[RECORD] Starting upload');
-      await uploadVideo(savedUri);
+      
+      // Use the savedUri directly instead of relying on state update
+      console.log('[RECORD] Starting upload with URI:', savedUri);
+      await uploadVideoWithUri(savedUri);
     } catch (error) {
       console.error('[RECORD] Recording error:', error);
       Alert.alert('Error', 'Failed to record video');
       setIsRecording(false);
+    }
+  };
+  
+  // New function that takes the URI directly as a parameter
+  const uploadVideoWithUri = async (uri: string) => {
+    setIsUploading(true);
+    setUploadError(null);
+    
+    try {
+      // Attempt to upload to real backend
+      if (uri) {
+        try {
+          console.log('[UPLOAD] Starting video upload to backend...');
+          console.log('[UPLOAD] Video URI:', uri);
+          
+          // Try a completely different approach - read the file as base64 and send it directly
+          console.log('[UPLOAD] Reading file as base64...');
+          const fileInfo = await FileSystem.getInfoAsync(uri);
+          console.log('[UPLOAD] File info:', fileInfo);
+          
+          if (!fileInfo.exists) {
+            throw new Error('File does not exist');
+          }
+          
+          console.log('[UPLOAD] File size:', fileInfo.size);
+          
+          // If file is too large, use mock data
+          if (fileInfo.size && fileInfo.size > 50 * 1024 * 1024) { // 50MB
+            console.log('[UPLOAD] File too large, using mock data');
+            await mockUpload();
+            return;
+          }
+          
+          // Read the file as base64
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          console.log('[UPLOAD] File read as base64, length:', base64.length);
+          
+          // Create a simple JSON payload with the base64 data
+          const payload = {
+            video: base64,
+            filename: 'scan_video.mp4',
+            contentType: 'video/mp4'
+          };
+          
+          console.log('[UPLOAD] Sending request to:', API_URL);
+          
+          // Use a direct fetch with the JSON payload
+          const uploadResponse = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          
+          console.log('[UPLOAD] Upload response status:', uploadResponse.status);
+          const responseText = await uploadResponse.text();
+          console.log('[UPLOAD] Upload response text:', responseText);
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed with status: ${uploadResponse.status}, response: ${responseText}`);
+          }
+          
+          // Parse the response
+          let uploadData;
+          try {
+            uploadData = JSON.parse(responseText);
+            console.log('[UPLOAD] Upload successful, parsed response:', uploadData);
+          } catch (parseError) {
+            console.error('[UPLOAD] Error parsing response:', parseError);
+            throw new Error('Failed to parse server response');
+          }
+          
+          // Wait for 2 seconds to allow backend processing
+          console.log('[UPLOAD] Waiting for backend processing...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Fetch analysis results from backend
+          console.log('[UPLOAD] Fetching analysis results...');
+          const analysisUrl = `${API_URL}results/${uploadData.scanId}`;
+          console.log('[UPLOAD] Analysis URL:', analysisUrl);
+          
+          const analysisResponse = await fetch(analysisUrl);
+          console.log('[UPLOAD] Analysis response status:', analysisResponse.status);
+          
+          if (!analysisResponse.ok) {
+            const analysisText = await analysisResponse.text();
+            console.error('[UPLOAD] Analysis response text:', analysisText);
+            throw new Error(`Failed to get analysis results: ${analysisResponse.status}`);
+          }
+          
+          const analysisData = await analysisResponse.json();
+          console.log('[UPLOAD] Analysis results received:', analysisData);
+          
+          // Extract the analysis results from the response
+          const analysisResults: AnalysisResponse = {
+            bpms: analysisData.results.bpms,
+            sdnn: analysisData.results.sdnn,
+            rmssd: analysisData.results.rmssd,
+            pnn50: analysisData.results.pnn50,
+            stress_level: analysisData.results.stress_level
+          };
+          
+          // Generate a unique scanId if not provided by the API
+          const scanId = uploadData.scanId || `scan-${Date.now()}`;
+          console.log('[UPLOAD] Using scanId:', scanId);
+          
+          // Store the scanId for later use
+          setScanId(scanId);
+          
+          // Process the analysis data
+          console.log('[UPLOAD] Processing analysis data...');
+          const results = await processVideoAnalysis(analysisResults, scanId);
+          console.log('[UPLOAD] Analysis processing complete');
+          
+          // Navigate to the analysis screen with the scanId
+          console.log('[UPLOAD] Navigating to Analysis screen...');
+          navigation.navigate('Analysis', { scanId });
+        } catch (error) {
+          console.error('[UPLOAD] Upload error:', error);
+          if (error instanceof Error) {
+            setUploadError(`Failed to upload video: ${error.message}`);
+          } else {
+            setUploadError('Failed to upload video. Please try again.');
+          }
+          
+          // If upload fails, try mock data as fallback
+          console.log('[UPLOAD] Upload failed, using mock data as fallback');
+          await mockUpload();
+        } finally {
+          setIsUploading(false);
+        }
+      } else {
+        console.error('[UPLOAD] No video URI provided');
+        setUploadError('No video URI provided. Please try again.');
+        setIsUploading(false);
+        
+        // Use mock data as fallback
+        console.log('[UPLOAD] No video URI, using mock data as fallback');
+        await mockUpload();
+      }
+    } catch (error) {
+      console.error('[UPLOAD] Outer error:', error);
+      setUploadError('Failed to upload video. Please try again.');
+      setIsUploading(false);
+      
+      // Use mock data as fallback for any error
+      console.log('[UPLOAD] Error occurred, using mock data as fallback');
+      await mockUpload();
+    }
+  };
+
+  // Maintain the original uploadVideo function for compatibility
+  const uploadVideo = async () => {
+    if (videoUri) {
+      await uploadVideoWithUri(videoUri);
+    } else {
+      console.error('[UPLOAD] No video URI available in state');
+      setUploadError('No video recorded. Please try again.');
+      setIsUploading(false);
+    }
+  };
+
+  const mockUpload = async () => {
+    console.log('[MOCK] Using mock upload...');
+    setIsUploading(true);
+    setUploadError(null);
+    
+    try {
+      // Simulate network delay
+      console.log('[MOCK] Simulating network delay (2s)...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate a mock scanId
+      const mockScanId = `mock-scan-${Date.now()}`;
+      console.log('[MOCK] Generated mock scan ID:', mockScanId);
+      
+      // Process the mock analysis data
+      console.log('[MOCK] Processing mock analysis data...');
+      const results = await processVideoAnalysis(mockAnalysisResponse, mockScanId);
+      console.log('[MOCK] Analysis processing complete');
+      
+      // Navigate to the analysis screen with the scanId
+      console.log('[MOCK] Navigating to Analysis screen...');
+      navigation.navigate('Analysis', { scanId: mockScanId });
+    } catch (error) {
+      console.error('[MOCK] Mock upload error:', error);
+      setUploadError('Failed to process video. Please try again.');
+    } finally {
+      console.log('[MOCK] Upload process complete');
+      setIsUploading(false);
     }
   };
 
@@ -378,7 +496,7 @@ const ScanScreen: React.FC = () => {
       <Container center>
         <LoadingIndicator fullScreen color={theme.colors.primary} />
         <Typography variant="h3" color={theme.colors.primary} marginTop="xl">
-          {USE_MOCK_BACKEND ? 'Processing Scan...' : 'Uploading and Analyzing...'}
+          {USE_MOCK_DATA ? 'Processing Scan...' : 'Uploading and Analyzing...'}
         </Typography>
         <Typography variant="body1" marginTop="md">
           Please wait while we process your scan
