@@ -1,177 +1,212 @@
-import {
-  CameraMode,
-  CameraType,
-  CameraView,
-  useCameraPermissions,
-} from "expo-camera";
-import { useRef, useState } from "react";
-import { Button, Pressable, StyleSheet, Text, View, Alert} from "react-native";
-import { Image } from "expo-image";
-import { AntDesign } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
-import { FontAwesome6 } from "@expo/vector-icons";
-import * as FileSystem from 'expo-file-system';
-import { Video } from 'expo-av';
+import React from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { View } from 'react-native';
 
-const SERVER_URL = 'http://44.202.160.166:3000/upload/';
+import { RootStackParamList, TabParamList } from './src/navigation/types';
+import { theme } from './src/theme/theme';
+import HomeScreen from './src/screens/HomeScreen';
+import ScanScreen from './src/screens/ScanScreen';
+import AnalysisScreen from './src/screens/AnalysisScreen';
+import AiSuggestionsScreen from './src/screens/AiSuggestionsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import RegistrationScreen from './src/screens/RegistrationScreen';
+import PregnancyTrackerScreen from './src/screens/PregnancyTrackerScreen';
+import Logo from './src/components/Logo';
+
+const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
+
+const HomeStack = () => {
+  return (
+    <Stack.Navigator
+      id="HomeStack"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: theme.colors.primary,
+        },
+        headerTintColor: theme.colors.white,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="Analysis" 
+        component={AnalysisScreen} 
+        options={{ title: 'Health Analysis' }}
+      />
+      <Stack.Screen 
+        name="AiSuggestions" 
+        component={AiSuggestionsScreen} 
+        options={{ title: 'AI Suggestions' }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ title: 'Settings' }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      id="MainTabs"
+      screenOptions={{
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.gray,
+        tabBarStyle: {
+          backgroundColor: theme.colors.white,
+          borderTopColor: theme.colors.lightGray,
+          paddingBottom: 5,
+          paddingTop: 5,
+        },
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ScanTab"
+        component={ScanScreen}
+        options={{
+          tabBarLabel: 'Scan',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="scan" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TrackerTab"
+        component={PregnancyTrackerScreen}
+        options={{
+          tabBarLabel: 'Tracker',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+const RootStack = () => {
+  return (
+    <Stack.Navigator 
+      id="RootStack"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="Main" component={TabNavigator} />
+      <Stack.Screen 
+        name="Registration" 
+        component={RegistrationScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Create Account',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="Scan" 
+        component={ScanScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Health Scan',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Settings',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="PregnancyTracker" 
+        component={PregnancyTrackerScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Pregnancy Tracker',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="Analysis" 
+        component={AnalysisScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Health Analysis',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="AiSuggestions" 
+        component={AiSuggestionsScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'AI Suggestions',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+    </Stack.Navigator>
+  );
+};
 
 export default function App() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const ref = useRef<CameraView>(null);
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [recording, setRecording] = useState(false);
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-
-  if (!permission) {
-    return null;
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
-        </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
-      </View>
-    );
-  }
-
-  const saveVideo = async (videoUri:string) => {
-    try {
-      const newUri = FileSystem.documentDirectory + `my_video.mp4`;
-      await FileSystem.moveAsync({ from: videoUri, to: newUri });
-      setVideoUri(newUri);
-      console.log('Video saved at:', newUri);
-      return newUri;
-    } catch (error) {
-      console.error('Error saving video:', error);
-    }
-  };
-
-  const uploadVideo = async (videoUri: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: videoUri,
-        name: 'video.mp4',
-        type: 'video/mp4',
-      });
-  
-      const uploadResponse = await fetch(SERVER_URL, {
-        method: "POST",
-        body: formData,
-        headers: {'Content-Type': 'multipart/form-data'},
-      });
-  
-      const data = await uploadResponse.json();
-      console.log("Upload success:", data);
-      Alert.alert("Success", "Video uploaded successfully!");
-    } catch (error) {
-      console.error("Upload failed:", error);
-      Alert.alert("Error", "Failed to upload video.");
-    }
-  };
-  
-  const recordVideo = async () => {
-    if (recording) {
-      setRecording(false);
-      ref.current?.stopRecording();
-      return;
-    }
-  
-    setRecording(true);
-    const video = await ref.current?.recordAsync();
-    const new_uri = await saveVideo(video.uri);
-    await uploadVideo(new_uri);
-  };
-
-  const toggleFacing = () => {
-    setFacing((prev) => (prev === "back" ? "front" : "back"));
-  };
-
-  const renderCamera = () => {
-    return (
-      <CameraView
-        style={styles.camera}
-        ref={ref}
-        mode="video"
-        facing={facing}
-        mute={false}
-        responsiveOrientationWhenOrientationLocked
-      >
-        <View style={styles.shutterContainer}>
-          <View style={[{width: 32}]}></View>
-          <Pressable onPress={recordVideo}>
-            {({ pressed }) => (
-              <View style={[styles.shutterBtn,{ opacity: pressed ? 0.5 : 1}]}>
-                <View style={[styles.shutterBtnInner, {backgroundColor: recording ? "white" : "red"}]}/>
-              </View>
-            )}
-          </Pressable>
-          <Pressable onPress={toggleFacing}>
-            <FontAwesome6 name="rotate-left" size={32} color="white" />
-          </Pressable>
-        </View>
-      </CameraView>
-    );
-  };
-
-  const renderVideo = () => {
-    return (
-      <View>
-        <Video
-          source={{ uri: videoUri }}
-          style={{ width: 300, height: 200 }}
-          useNativeControls
-          shouldPlay
-        />
-        <Button onPress={() => setVideoUri(null)} title="Take another video" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {videoUri ? renderVideo() : renderCamera()}
-    </View>
+    <NavigationContainer>
+      <StatusBar style="light" />
+      <RootStack />
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  camera: {
-    flex: 1,
-    width: "100%",
-  },
-  shutterContainer: {
-    position: "absolute",
-    bottom: 44,
-    left: 0,
-    width: "100%",
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 30,
-  },
-  shutterBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 5,
-    borderColor: "white",
-    width: 85,
-    height: 85,
-    borderRadius: 45,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shutterBtnInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 50,
-  },
-});
