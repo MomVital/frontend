@@ -57,13 +57,6 @@ const HomeScreen: React.FC = () => {
           <Typography variant="body1" marginBottom="md">
             {currentMilestone?.description}
           </Typography>
-          <TipContainer>
-            <Ionicons name="bulb-outline" size={24} color={theme.colors.primary} />
-            <Typography variant="body2" marginLeft="sm">
-              <Typography variant="body2" weight="bold">Tip: </Typography>
-              {currentMilestone?.tips}
-            </Typography>
-          </TipContainer>
         </Card>
 
         {/* Quick Health Stats */}
@@ -73,7 +66,7 @@ const HomeScreen: React.FC = () => {
         <StatsContainer>
           <StatCard>
             <StatIconContainer>
-              <FontAwesome5 name="heartbeat" size={24} color={theme.colors.primary} />
+              <MaterialCommunityIcons name="heart-pulse" size={24} color={theme.colors.primary} />
             </StatIconContainer>
             <Typography variant="h4" align="center">
               {mockHealthData.heartRate.current}
@@ -85,13 +78,25 @@ const HomeScreen: React.FC = () => {
 
           <StatCard>
             <StatIconContainer>
-              <MaterialCommunityIcons name="heart-pulse" size={24} color={theme.colors.primary} />
+              <MaterialCommunityIcons name="heart" size={24} color={theme.colors.primary} />
             </StatIconContainer>
             <Typography variant="h4" align="center">
               {mockHealthData.hrv.current}
             </Typography>
             <Typography variant="caption" align="center">
               HRV
+            </Typography>
+          </StatCard>
+
+          <StatCard>
+            <StatIconContainer>
+              <MaterialCommunityIcons name="lightning-bolt" size={24} color={theme.colors.primary} />
+            </StatIconContainer>
+            <Typography variant="h4" align="center">
+              {mockHealthData.stress.current}
+            </Typography>
+            <Typography variant="caption" align="center">
+              Stress
             </Typography>
           </StatCard>
 
@@ -104,18 +109,6 @@ const HomeScreen: React.FC = () => {
             </Typography>
             <Typography variant="caption" align="center">
               Mood
-            </Typography>
-          </StatCard>
-
-          <StatCard>
-            <StatIconContainer>
-              <MaterialCommunityIcons name="lightning-bolt-outline" size={24} color={theme.colors.primary} />
-            </StatIconContainer>
-            <Typography variant="h4" align="center">
-              {mockHealthData.stress.current}
-            </Typography>
-            <Typography variant="caption" align="center">
-              Stress
             </Typography>
           </StatCard>
         </StatsContainer>
@@ -132,40 +125,29 @@ const HomeScreen: React.FC = () => {
         </Typography>
         {mockAiSuggestions.slice(0, 2).map((suggestion) => (
           <SuggestionCard key={suggestion.id} importance={suggestion.importance}>
-            <SuggestionHeader>
-              <Typography variant="h4" color={theme.colors.text.light}>
-                {suggestion.title}
-              </Typography>
-              <ImportanceBadge importance={suggestion.importance}>
-                <Typography variant="caption" color={theme.colors.text.light}>
-                  {suggestion.importance}
+            <CardContent importance={suggestion.importance}>
+              <SuggestionHeader>
+                <Typography variant="h4" color={theme.colors.text.light}>
+                  {suggestion.title}
                 </Typography>
-              </ImportanceBadge>
-            </SuggestionHeader>
-            <Typography variant="body1" color={theme.colors.text.light} marginTop="sm">
-              {suggestion.description}
-            </Typography>
+                <ImportanceBadge importance={suggestion.importance}>
+                  <Typography variant="caption" color={theme.colors.text.light}>
+                    {suggestion.importance}
+                  </Typography>
+                </ImportanceBadge>
+              </SuggestionHeader>
+              <Typography variant="body1" color={theme.colors.text.light} marginTop="sm">
+                {suggestion.description}
+              </Typography>
+            </CardContent>
           </SuggestionCard>
         ))}
 
         <TouchableOpacity onPress={() => navigation.navigate('AiSuggestions')}>
-          <Typography variant="body2" color={theme.colors.primary} align="right" marginBottom="md">
+          <Typography variant="body2" color={theme.colors.primary} align="right"  marginTop="sm" marginBottom="md">
             View All Suggestions →
           </Typography>
         </TouchableOpacity>
-
-        {/* Scan Button */}
-        <ScanButtonContainer>
-          <Button 
-            title="Scan Now" 
-            onPress={() => navigation.navigate('Scan')} 
-            size="large"
-            fullWidth
-          />
-          <Typography variant="body2" align="center" marginTop="sm">
-            Scan to get personalized health insights
-          </Typography>
-        </ScanButtonContainer>
       </ContentContainer>
     </Container>
   );
@@ -210,14 +192,6 @@ const ContentContainer = styled(View)`
   padding: ${theme.spacing.md}px;
 `;
 
-const TipContainer = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  background-color: ${theme.colors.background};
-  padding: ${theme.spacing.sm}px;
-  border-radius: ${theme.borderRadius.sm}px;
-`;
-
 const StatsContainer = styled(View)`
   flex-direction: row;
   justify-content: space-between;
@@ -246,12 +220,12 @@ const StatIconContainer = styled(View)`
 `;
 
 const SuggestionCard = styled(Card)<{ importance: string }>`
-  background-color: ${({ importance }) => {
-    if (importance === 'High') return theme.colors.primaryDark;
-    if (importance === 'Medium') return theme.colors.primary;
-    return theme.colors.primaryLight;
-  }};
-  margin-bottom: ${theme.spacing.sm}px;
+  background-color: transparent;
+  margin-bottom: ${theme.spacing.lg}px;
+  border-radius: ${theme.borderRadius.lg}px;
+  padding: 10px;
+  overflow: hidden;
+  ${theme.shadows.medium};
 `;
 
 const SuggestionHeader = styled(View)`
@@ -259,6 +233,7 @@ const SuggestionHeader = styled(View)`
   justify-content: space-between;
   align-items: flex-start;
   width: 100%;
+  margin-bottom: ${theme.spacing.sm}px;
 `;
 
 const ImportanceBadge = styled(View)<{ importance: string }>`
@@ -273,9 +248,15 @@ const ImportanceBadge = styled(View)<{ importance: string }>`
   margin-left: ${theme.spacing.sm}px;
 `;
 
-const ScanButtonContainer = styled(View)`
-  margin-top: ${theme.spacing.lg}px;
-  margin-bottom: ${theme.spacing.xl}px;
+const CardContent = styled(View)<{ importance: string }>`
+  background-color: ${({ importance }) => {
+    if (importance === 'High') return theme.colors.primaryDark;
+    if (importance === 'Medium') return theme.colors.primary;
+    return theme.colors.accent;
+  }};
+  border-radius: ${theme.borderRadius.lg}px;
+  padding: ${theme.spacing.lg}px;
+  width: 100%;
 `;
 
 export default HomeScreen; 

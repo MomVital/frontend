@@ -91,9 +91,7 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: 'Scan',
           tabBarIcon: ({ color, size }) => (
-            <View style={{ marginTop: -5 }}>
-              <Logo size="small" showText={false} color={color} />
-            </View>
+            <Ionicons name="scan" color={color} size={size} />
           ),
         }}
       />
@@ -113,7 +111,7 @@ const TabNavigator = () => {
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="user" color={color} size={size} />
+            <Ionicons name="person" color={color} size={size} />
           ),
         }}
       />
@@ -182,6 +180,18 @@ const RootStack = () => {
         options={{ 
           headerShown: true,
           title: 'Health Analysis',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="AiSuggestions" 
+        component={AiSuggestionsScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'AI Suggestions',
           headerStyle: {
             backgroundColor: theme.colors.primary,
           },

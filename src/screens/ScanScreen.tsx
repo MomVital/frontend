@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Alert, Pressable, BackHandler } from 'react-native';
+import { View, Alert, Pressable, BackHandler, Animated } from 'react-native';
 import { useNavigation, CommonActions, StackActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import styled from 'styled-components/native';
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
+import { Svg, Ellipse, Path } from 'react-native-svg';
 
 import Container from '../components/Container';
 import Typography from '../components/Typography';
@@ -18,7 +19,7 @@ import Card from '../components/Card';
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
 // Backend API URL
-const API_URL = 'http://ip_address:3000/analyze/';
+const API_URL = 'http://52.20.137.195:3000/analyze/';
 const USE_MOCK_BACKEND = true;
 
 const ScanScreen: React.FC = () => {
@@ -30,13 +31,74 @@ const ScanScreen: React.FC = () => {
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [scanId, setScanId] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const cameraRef = useRef<CameraView>(null);
+  
+  // Animation values
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
   
   // Log when camera ref is available
   useEffect(() => {
     console.log('[CAMERA] Camera ref initialized:', cameraRef.current ? 'YES' : 'NO');
   }, []);
+  
+  // Start animations when recording
+  useEffect(() => {
+    // Scanning line animation
+    Animated.loop(
+      Animated.timing(scanLineAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      })
+    ).start();
+    
+    // Pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, []);
+  
+  // Add timer effect
+  useEffect(() => {
+    if (isRecording) {
+      // Reset timer when starting recording
+      setRecordingTime(0);
+      
+      // Start the timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prevTime => prevTime + 1);
+      }, 1000);
+    } else {
+      // Clear the timer when stopping recording
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    
+    // Cleanup function
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isRecording]);
   
   if (!permission) {
     // Camera permissions are still loading
@@ -68,7 +130,6 @@ const ScanScreen: React.FC = () => {
   const saveVideo = async (tempUri: string) => {
     try {
       const newUri = FileSystem.documentDirectory + `scan_video_${Date.now()}.mp4`;
-      console.log('[SAVE] Moving video from', tempUri, 'to', newUri);
       await FileSystem.moveAsync({ from: tempUri, to: newUri });
       console.log('[SAVE] Video saved at:', newUri);
       return newUri;
@@ -141,7 +202,7 @@ const ScanScreen: React.FC = () => {
     try {
       // Create form data for the video upload
       const formData = new FormData();
-      formData.append('video', {
+      formData.append('file', {
         uri,
         name: 'scan_video.mp4',
         type: 'video/mp4',
@@ -161,12 +222,12 @@ const ScanScreen: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log('Upload successful:', data);
+      console.log('[UPLOAD]Upload successful:', data);
       
       // Use custom navigation function
       navigateToAnalysis(data.scanId);
     } catch (error) {
-      console.error('Failed to upload video:', error);
+      console.error('[UPLOAD] Failed to upload video:', error);
       
       // If backend connection failed, offer to use mock backend
       Alert.alert(
@@ -211,6 +272,7 @@ const ScanScreen: React.FC = () => {
     
     console.log('[RECORD] Starting recording');
     setIsRecording(true);
+    setRecordingTime(0); // Reset timer when starting recording
     
     try {
       console.log('[RECORD] Calling recordAsync()');
@@ -295,6 +357,73 @@ const ScanScreen: React.FC = () => {
     );
   }
 
+  // Update the ScanningIndicator component to use Animated
+  const renderScanningIndicator = () => {
+    if (!isRecording) return null;
+    
+    const translateY = scanLineAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [10, 270] // Adjust based on the height of your ScanFrame
+    });
+    
+    return (
+      <ScanningIndicator>
+        <AnimatedScanningLine 
+          style={{ 
+            transform: [{ translateY }],
+            shadowColor: theme.colors.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.8,
+            shadowRadius: 5,
+            elevation: 5
+          }} 
+        />
+        <Typography variant="body2" color={theme.colors.white} align="center">
+          Scanning...
+        </Typography>
+      </ScanningIndicator>
+    );
+  };
+  
+  // Update the FaceOutlineGuide component to use Animated
+  const renderFaceOutlineGuide = () => {
+    const scale = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.98, 1.02]
+    });
+    
+    const opacity = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.7]
+    });
+    
+    return (
+      <FaceOutlineContainer>
+        <AnimatedPulsingContainer style={{ transform: [{ scale }], opacity }}>
+          <Svg height="100%" width="100%" viewBox="0 0 100 140">
+            {/* Head outline */}
+            <Ellipse
+              cx="50"
+              cy="50"
+              rx="30"
+              ry="40"
+              stroke={theme.colors.white}
+              strokeWidth="1"
+              fill="none"
+            />
+            {/* Neck outline */}
+            <Path
+              d="M35,85 L35,100 Q50,110 65,100 L65,85"
+              stroke={theme.colors.white}
+              strokeWidth="1"
+              fill="none"
+            />
+          </Svg>
+        </AnimatedPulsingContainer>
+      </FaceOutlineContainer>
+    );
+  };
+
   return (
     <Container backgroundColor={theme.colors.black} safeArea={false}>
       <CameraView 
@@ -311,20 +440,14 @@ const ScanScreen: React.FC = () => {
             </Typography>
             <Typography variant="body1" color={theme.colors.white} align="center" marginTop="xs">
               {isRecording 
-                ? `Recording...` 
-                : 'Position your face in the frame'}
+                ? `Recording...\nPlease record for 30 seconds` 
+                : 'Center your face in the frame\nPlease record for 30 seconds'}
             </Typography>
           </ScanHeader>
           
           <ScanFrame>
-            {isRecording && (
-              <ScanningIndicator>
-                <ScanningLine />
-                <Typography variant="body2" color={theme.colors.white} align="center" marginTop="sm">
-                  Scanning...
-                </Typography>
-              </ScanningIndicator>
-            )}
+            {renderFaceOutlineGuide()}
+            {renderScanningIndicator()}
           </ScanFrame>
           
           <ControlsContainer>
@@ -354,7 +477,7 @@ const ScanScreen: React.FC = () => {
                 </ScanButtonInner>
               </ScanButtonOuter>
               <Typography variant="caption" color={theme.colors.white} marginTop="sm">
-                {isRecording ? 'Stop' : 'Start Scan'}
+                {isRecording ? `${recordingTime}s` : 'Start Scan'}
               </Typography>
             </ScanButton>
             
@@ -381,7 +504,7 @@ const ScanScreen: React.FC = () => {
 
 const ScanOverlay = styled(View)`
   flex: 1;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   justify-content: space-between;
   padding: ${theme.spacing.lg}px;
 `;
@@ -392,29 +515,33 @@ const ScanHeader = styled(View)`
 
 const ScanFrame = styled(View)`
   align-self: center;
-  width: 250px;
-  height: 250px;
-  border-width: 2px;
+  width: 240px;
+  height: 360px;
+  border-width: 3px;
   border-color: ${theme.colors.primary};
   border-radius: ${theme.borderRadius.md}px;
   overflow: hidden;
   justify-content: center;
   align-items: center;
+  position: relative;
 `;
 
 const ScanningIndicator = styled(View)`
   width: 100%;
+  height: 100%;
   align-items: center;
+  justify-content: flex-end;
+  padding-bottom: ${theme.spacing.sm}px;
 `;
 
-const ScanningLine = styled(View)`
+const ScanningLineBase = styled(View)`
   height: 2px;
   width: 100%;
   background-color: ${theme.colors.primary};
   position: absolute;
-  top: 0;
-  animation: scan 2s infinite;
 `;
+
+const AnimatedScanningLine = Animated.createAnimatedComponent(ScanningLineBase);
 
 const ControlsContainer = styled(View)`
   flex-direction: row;
@@ -451,5 +578,21 @@ const ScanButtonInner = styled(View)<{ isRecording: boolean }>`
   justify-content: center;
   align-items: center;
 `;
+
+const FaceOutlineContainer = styled(View)`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.5;
+`;
+
+const PulsingContainerBase = styled(View)`
+  width: 100%;
+  height: 100%;
+`;
+
+const AnimatedPulsingContainer = Animated.createAnimatedComponent(PulsingContainerBase);
 
 export default ScanScreen; 

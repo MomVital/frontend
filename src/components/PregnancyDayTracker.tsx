@@ -43,7 +43,7 @@ const PregnancyDayTracker: React.FC<PregnancyDayTrackerProps> = ({ currentWeek, 
       </HeaderRow>
       
       <WeekInfo>
-        <Typography variant="h2" color={theme.colors.primary}>
+        <Typography variant="h2" color={theme.colors.primaryDark}>
           Week {currentWeek}
         </Typography>
         <Typography variant="body2">

@@ -29,9 +29,7 @@ const ProfileScreen: React.FC = () => {
       <ProfileHeader>
         <ProfileImageContainer>
           <ProfileImage source={{ uri: mockUser.profileImage }} />
-          <EditProfileButton>
-            <Ionicons name="pencil" size={16} color={theme.colors.white} />
-          </EditProfileButton>
+
         </ProfileImageContainer>
         
         <Typography variant="h2" color={theme.colors.text.light} align="center" marginTop="md">
@@ -95,7 +93,7 @@ const ProfileScreen: React.FC = () => {
               </Typography>
             </InfoLabel>
             <Typography variant="body1">
-              A+
+              AB
             </Typography>
           </InfoRow>
           
