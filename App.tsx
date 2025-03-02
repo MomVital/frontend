@@ -176,6 +176,18 @@ const RootStack = () => {
           headerTintColor: theme.colors.white,
         }}
       />
+      <Stack.Screen 
+        name="Analysis" 
+        component={AnalysisScreen} 
+        options={{ 
+          headerShown: true,
+          title: 'Health Analysis',
+          headerStyle: {
+            backgroundColor: theme.colors.primary,
+          },
+          headerTintColor: theme.colors.white,
+        }}
+      />
     </Stack.Navigator>
   );
 };

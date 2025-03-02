@@ -5,7 +5,7 @@ export const mockUser = {
   email: 'sarah.johnson@example.com',
   age: 28,
   pregnancyWeek: 24,
-  dueDate: '2023-12-15',
+  dueDate: '2025-06-15',
   profileImage: 'https://randomuser.me/api/portraits/women/44.jpg',
 };
 

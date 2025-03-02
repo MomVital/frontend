@@ -28,10 +28,10 @@ const HomeScreen: React.FC = () => {
       <Header>
         <WelcomeSection>
           <Typography variant="h2" color={theme.colors.text.light}>
-            Hello, {mockUser.name.split(' ')[0]}
+            Hi, {mockUser.name.split(' ')[0]}
           </Typography>
           <Typography variant="body1" color={theme.colors.text.light} marginTop="xs">
-            Week {mockUser.pregnancyWeek} of Pregnancy
+            How are you feeling today?
           </Typography>
         </WelcomeSection>
         <LogoContainer>
