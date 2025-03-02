@@ -23,19 +23,44 @@ type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 const API_URL = 'http://52.20.137.195:3000/analyze/';
 const USE_MOCK_BACKEND = true;
 
-// Mock analysis response for testing
-const mockAnalysisResponse: AnalysisResponse = {
-  timesES: [1, 2, 3, 4, 5],
-  bpmES: [75, 78, 80, 82, 79],
-  nni_seq: [800, 810, 790, 805, 795],
-  hrv_results: {
-    sdnn: 45,
-    rmssd: 42,
-    pnn50: 30,
-    lf: 1200,
-    hf: 900,
-    lf_hf_ratio: 1.33
-  }
+// Generate random variation within a range
+const getRandomVariation = (base: number, range: number): number => {
+  return base + (Math.random() * range * 2 - range);
+};
+
+// Generate fresh mock analysis data with slight variations
+const generateMockAnalysisData = (): AnalysisResponse => {
+  // Base heart rate values with slight variations
+  const baseBpm = 78;
+  const bpmVariation = 5;
+  const bpmES = Array(5).fill(0).map(() => Math.round(getRandomVariation(baseBpm, bpmVariation)));
+  
+  // Base NNI sequence with slight variations
+  const baseNni = 800;
+  const nniVariation = 20;
+  const nni_seq = Array(5).fill(0).map(() => Math.round(getRandomVariation(baseNni, nniVariation)));
+  
+  // Base HRV results with slight variations
+  const sdnn = Math.round(getRandomVariation(45, 5));
+  const rmssd = Math.round(getRandomVariation(42, 4));
+  const pnn50 = Math.round(getRandomVariation(30, 3));
+  const lf = Math.round(getRandomVariation(1200, 100));
+  const hf = Math.round(getRandomVariation(900, 80));
+  const lf_hf_ratio = parseFloat((lf / hf).toFixed(2));
+  
+  return {
+    timesES: [1, 2, 3, 4, 5],
+    bpmES: bpmES,
+    nni_seq: nni_seq,
+    hrv_results: {
+      sdnn: sdnn,
+      rmssd: rmssd,
+      pnn50: pnn50,
+      lf: lf,
+      hf: hf,
+      lf_hf_ratio: lf_hf_ratio
+    }
+  };
 };
 
 const ScanScreen: React.FC = () => {
@@ -171,15 +196,20 @@ const ScanScreen: React.FC = () => {
     }
   };
 
-  // Mock backend response
+  // Mock backend response with fresh data each time
   const mockUploadVideo = async (uri: string) => {
     console.log('[MOCK] Starting mock upload for video:', uri);
     setIsUploading(true);
     
     try {
-      // Simulate network delay
-      console.log('[MOCK] Simulating network delay (2s)...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate network delay (2-4 seconds)
+      const delay = 2000 + Math.random() * 2000;
+      console.log(`[MOCK] Simulating network delay (${Math.round(delay/1000)}s)...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Generate fresh mock analysis data
+      const mockAnalysisResponse = generateMockAnalysisData();
+      console.log('[MOCK] Generated fresh mock analysis data:', mockAnalysisResponse);
       
       // Process the mock analysis data
       const result = await processVideoAnalysis(mockAnalysisResponse);

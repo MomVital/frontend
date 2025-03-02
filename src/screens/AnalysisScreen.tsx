@@ -39,6 +39,11 @@ const normalRanges = {
   }
 };
 
+// Generate random variation within a range
+const getRandomVariation = (base: number, range: number): number => {
+  return Math.round(base + (Math.random() * range * 2 - range));
+};
+
 // Flag to toggle between mock data and real API data
 const USE_MOCK_DATA = true;
 
@@ -55,6 +60,31 @@ const AnalysisScreen: React.FC = () => {
   const [emotionalAnalysis, setEmotionalAnalysis] = useState("");
   const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
 
+  // Generate fresh mock health data based on the scan
+  const generateFreshMockHealthData = () => {
+    // Create a copy of the mock data
+    const freshData = JSON.parse(JSON.stringify(mockHealthData));
+    
+    // Update with random variations
+    freshData.heartRate.current = getRandomVariation(80, 8);
+    freshData.heartRate.min = getRandomVariation(65, 5);
+    freshData.heartRate.max = getRandomVariation(95, 5);
+    freshData.heartRate.average = getRandomVariation(78, 4);
+    
+    freshData.hrv.current = getRandomVariation(45, 10);
+    freshData.hrv.min = getRandomVariation(30, 5);
+    freshData.hrv.max = getRandomVariation(65, 5);
+    freshData.hrv.average = getRandomVariation(48, 5);
+    
+    freshData.stress.level = getRandomVariation(65, 15);
+    freshData.stress.current = freshData.stress.level < 40 ? 'Low' : freshData.stress.level < 70 ? 'Med' : 'High';
+    
+    const emotions = ['Calm', 'Happy', 'Anxious', 'Tired', 'Energetic', 'Relaxed', 'Stressed'];
+    freshData.emotion.current = emotions[Math.floor(Math.random() * emotions.length)];
+    
+    return freshData;
+  };
+
   // Fetch analysis data
   useEffect(() => {
     const fetchAnalysisData = async () => {
@@ -64,21 +94,38 @@ const AnalysisScreen: React.FC = () => {
         // In a real app, you would fetch the analysis data from your backend
         // For now, we'll use mock data
         if (USE_MOCK_DATA) {
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Simulate API delay with random duration (1-3 seconds)
+          const delay = 1000 + Math.random() * 2000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Generate fresh health data for this scan
+          const freshHealthData = generateFreshMockHealthData();
+          setHealthData(freshHealthData);
           
           // Set mock analysis data
           const mockAnalysis: AnalysisResponse = {
             timesES: [1, 2, 3, 4, 5],
-            bpmES: [75, 78, 80, 82, 79],
-            nni_seq: [800, 810, 790, 805, 795],
+            bpmES: [
+              getRandomVariation(freshHealthData.heartRate.current - 3, 2),
+              getRandomVariation(freshHealthData.heartRate.current - 1, 2),
+              getRandomVariation(freshHealthData.heartRate.current, 2),
+              getRandomVariation(freshHealthData.heartRate.current + 1, 2),
+              getRandomVariation(freshHealthData.heartRate.current - 2, 2)
+            ],
+            nni_seq: [
+              getRandomVariation(800, 20),
+              getRandomVariation(810, 20),
+              getRandomVariation(790, 20),
+              getRandomVariation(805, 20),
+              getRandomVariation(795, 20)
+            ],
             hrv_results: {
-              sdnn: 45,
-              rmssd: 42,
-              pnn50: 30,
-              lf: 1200,
-              hf: 900,
-              lf_hf_ratio: 1.33
+              sdnn: freshHealthData.hrv.current,
+              rmssd: getRandomVariation(42, 5),
+              pnn50: getRandomVariation(30, 5),
+              lf: getRandomVariation(1200, 100),
+              hf: getRandomVariation(900, 100),
+              lf_hf_ratio: parseFloat((getRandomVariation(133, 20) / 100).toFixed(2))
             },
             week: 24
           };
