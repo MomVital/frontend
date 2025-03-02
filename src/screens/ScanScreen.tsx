@@ -15,12 +15,28 @@ import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import LoadingIndicator from '../components/LoadingIndicator';
 import Card from '../components/Card';
+import { processVideoAnalysis, AnalysisResponse } from '../utils/apiService';
 
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
 // Backend API URL
 const API_URL = 'http://52.20.137.195:3000/analyze/';
 const USE_MOCK_BACKEND = true;
+
+// Mock analysis response for testing
+const mockAnalysisResponse: AnalysisResponse = {
+  timesES: [1, 2, 3, 4, 5],
+  bpmES: [75, 78, 80, 82, 79],
+  nni_seq: [800, 810, 790, 805, 795],
+  hrv_results: {
+    sdnn: 45,
+    rmssd: 42,
+    pnn50: 30,
+    lf: 1200,
+    hf: 900,
+    lf_hf_ratio: 1.33
+  }
+};
 
 const ScanScreen: React.FC = () => {
   const navigation = useNavigation<ScanScreenNavigationProp>();
@@ -165,6 +181,10 @@ const ScanScreen: React.FC = () => {
       console.log('[MOCK] Simulating network delay (2s)...');
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Process the mock analysis data
+      const result = await processVideoAnalysis(mockAnalysisResponse);
+      console.log('[MOCK] Processed analysis data:', result);
+      
       // Generate mock scan ID
       const mockScanId = `mock-scan-${Date.now()}`;
       console.log('[MOCK] Generated mock scan ID:', mockScanId);
@@ -222,7 +242,17 @@ const ScanScreen: React.FC = () => {
       }
       
       const data = await response.json();
-      console.log('[UPLOAD]Upload successful:', data);
+      console.log('[UPLOAD] Upload successful:', data);
+      
+      // Process the analysis data
+      const analysisData: AnalysisResponse = {
+        timesES: data.timesES || [],
+        bpmES: data.bpmES || [],
+        nni_seq: data.nni_seq || [],
+        hrv_results: data.hrv_results || {}
+      };
+      
+      await processVideoAnalysis(analysisData);
       
       // Use custom navigation function
       navigateToAnalysis(data.scanId);

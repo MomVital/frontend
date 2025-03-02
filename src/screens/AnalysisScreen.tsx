@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Dimensions } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,6 +14,7 @@ import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import { mockHealthData } from '../utils/mockData';
 import LoadingIndicator from '../components/LoadingIndicator';
+import { AnalysisResponse, getHeartBeatAnalysis, getHrvAnalysis, getStressAnalysis, getEmotionalStateAnalysis } from '../utils/apiService';
 
 type AnalysisScreenRouteProp = RouteProp<RootStackParamList, 'Analysis'>;
 type AnalysisScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Analysis'>;
@@ -38,20 +39,79 @@ const normalRanges = {
   }
 };
 
+// Flag to toggle between mock data and real API data
+const USE_MOCK_DATA = true;
+
 const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisScreenRouteProp>();
   const navigation = useNavigation<AnalysisScreenNavigationProp>();
   const scanId = route.params?.scanId;
 
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(true);
+  const [healthData, setHealthData] = useState(mockHealthData);
+  const [heartRateAnalysis, setHeartRateAnalysis] = useState("");
+  const [hrvAnalysis, setHrvAnalysis] = useState("");
+  const [stressAnalysis, setStressAnalysis] = useState("");
+  const [emotionalAnalysis, setEmotionalAnalysis] = useState("");
+  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
 
-  React.useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Fetch analysis data
+  useEffect(() => {
+    const fetchAnalysisData = async () => {
+      setLoading(true);
+      
+      try {
+        // In a real app, you would fetch the analysis data from your backend
+        // For now, we'll use mock data
+        if (USE_MOCK_DATA) {
+          // Simulate API delay
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Set mock analysis data
+          const mockAnalysis: AnalysisResponse = {
+            timesES: [1, 2, 3, 4, 5],
+            bpmES: [75, 78, 80, 82, 79],
+            nni_seq: [800, 810, 790, 805, 795],
+            hrv_results: {
+              sdnn: 45,
+              rmssd: 42,
+              pnn50: 30,
+              lf: 1200,
+              hf: 900,
+              lf_hf_ratio: 1.33
+            },
+            week: 24
+          };
+          
+          setAnalysisData(mockAnalysis);
+          
+          // Get analyses
+          const heartRate = await getHeartBeatAnalysis(mockAnalysis);
+          const hrv = await getHrvAnalysis(mockAnalysis);
+          const stress = await getStressAnalysis(mockAnalysis);
+          const emotional = getEmotionalStateAnalysis();
+          
+          setHeartRateAnalysis(heartRate);
+          setHrvAnalysis(hrv);
+          setStressAnalysis(stress);
+          setEmotionalAnalysis(emotional);
+        } else {
+          // In a real app, you would fetch the analysis data from your backend
+          // For example:
+          // const response = await fetch(`http://your-api.com/analysis/${scanId}`);
+          // const data = await response.json();
+          // setAnalysisData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching analysis data:', error);
+        // Handle error
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAnalysisData();
+  }, [scanId]);
 
   if (loading) {
     return <LoadingIndicator fullScreen color={theme.colors.primary} />;
@@ -60,7 +120,7 @@ const AnalysisScreen: React.FC = () => {
   // Calculate position percentage for heart rate
   const getHeartRatePosition = () => {
     const { min, max } = normalRanges.heartRate;
-    const current = mockHealthData.heartRate.current;
+    const current = healthData.heartRate.current;
     const range = max - min;
     const position = ((current - min) / range) * 100;
     return Math.max(0, Math.min(100, position));
@@ -69,7 +129,7 @@ const AnalysisScreen: React.FC = () => {
   // Calculate position percentage for HRV
   const getHrvPosition = () => {
     const { min, max } = normalRanges.hrv;
-    const current = mockHealthData.hrv.current;
+    const current = healthData.hrv.current;
     const range = max - min;
     const position = ((current - min) / range) * 100;
     return Math.max(0, Math.min(100, position));
@@ -89,6 +149,11 @@ const AnalysisScreen: React.FC = () => {
         <Typography variant="body1" color={theme.colors.text.light} align="center" marginTop="xs">
           {scanId ? 'Based on your recent scan' : 'Your current health status'}
         </Typography>
+        {analysisData?.week && (
+          <Typography variant="body2" color={theme.colors.text.light} align="center" marginTop="xs">
+            Pregnancy Week: {analysisData.week}
+          </Typography>
+        )}
       </HeaderSection>
 
       <ContentSection>
@@ -105,7 +170,7 @@ const AnalysisScreen: React.FC = () => {
 
           <CurrentMetricContainer>
             <Typography variant="h1" color={theme.colors.primary} align="center">
-              {mockHealthData.heartRate.current}
+              {healthData.heartRate.current}
             </Typography>
             <Typography variant="body1" align="center">
               Current BPM
@@ -130,21 +195,20 @@ const AnalysisScreen: React.FC = () => {
           <MetricStatsRow>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Min</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.heartRate.min}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.heartRate.min}</Typography>
             </MetricStat>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Max</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.heartRate.max}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.heartRate.max}</Typography>
             </MetricStat>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Avg</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.heartRate.average}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.heartRate.average}</Typography>
             </MetricStat>
           </MetricStatsRow>
 
           <Typography variant="body1" marginTop="md">
-            Your heart rate is within the normal range for pregnant women in their second trimester. 
-            The slight elevation is normal and corresponds with your activity levels.
+            {heartRateAnalysis || "Your heart rate is within the normal range for pregnant women in their second trimester. The slight elevation is normal and corresponds with your activity levels."}
           </Typography>
         </SectionCard>
 
@@ -161,7 +225,7 @@ const AnalysisScreen: React.FC = () => {
 
           <CurrentMetricContainer>
             <Typography variant="h1" color={theme.colors.primary} align="center">
-              {mockHealthData.hrv.current}
+              {healthData.hrv.current}
             </Typography>
             <Typography variant="body1" align="center">
               Current ms
@@ -186,21 +250,20 @@ const AnalysisScreen: React.FC = () => {
           <MetricStatsRow>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Min</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.hrv.min}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.hrv.min}</Typography>
             </MetricStat>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Max</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.hrv.max}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.hrv.max}</Typography>
             </MetricStat>
             <MetricStat>
               <Typography variant="caption" color={theme.colors.gray}>Avg</Typography>
-              <Typography variant="body1" weight="bold">{mockHealthData.hrv.average}</Typography>
+              <Typography variant="body1" weight="bold">{healthData.hrv.average}</Typography>
             </MetricStat>
           </MetricStatsRow>
 
           <Typography variant="body1" marginTop="md">
-            Your HRV indicates a good balance between rest and activity. 
-            This suggests your autonomic nervous system is functioning well during pregnancy.
+            {hrvAnalysis || "Your HRV indicates a good balance between rest and activity. This suggests your autonomic nervous system is functioning well during pregnancy."}
           </Typography>
         </SectionCard>
 
@@ -217,7 +280,7 @@ const AnalysisScreen: React.FC = () => {
 
           <CurrentMetricContainer>
             <Typography variant="h1" color={theme.colors.primary} align="center">
-              {mockHealthData.stress.current}
+              {healthData.stress.current}
             </Typography>
             <Typography variant="body1" align="center">
               Current Level
@@ -226,13 +289,13 @@ const AnalysisScreen: React.FC = () => {
 
           <StressLevelIndicator>
             <StressBar>
-              <StressLevel level={mockHealthData.stress.level} />
+              <StressLevel level={healthData.stress.level} />
               <StressRangeLabels>
                 <StressRangeLabel position="0%">Low</StressRangeLabel>
                 <StressRangeLabel position="40%">Medium</StressRangeLabel>
                 <StressRangeLabel position="70%">High</StressRangeLabel>
               </StressRangeLabels>
-              <StressIndicatorDot position={`${mockHealthData.stress.level}%`} />
+              <StressIndicatorDot position={`${healthData.stress.level}%`} />
             </StressBar>
             <StressLabels>
               <Typography variant="caption">0%</Typography>
@@ -242,13 +305,11 @@ const AnalysisScreen: React.FC = () => {
           </StressLevelIndicator>
 
           <Typography variant="body1" marginTop="md">
-            Your current stress level is {mockHealthData.stress.current.toLowerCase()}. 
-            We've noticed a pattern of increased stress levels in the mid-afternoon. 
-            This could be related to work activities or fatigue.
+            {stressAnalysis || "Your current stress level is medium. We've noticed a pattern of increased stress levels in the mid-afternoon. This could be related to work activities or fatigue."}
           </Typography>
         </SectionCard>
 
-        {/* Emotional State */}
+        {/* Emotional State Section */}
         <SectionCard>
           <SectionHeader>
             <IconContainer>
@@ -260,47 +321,46 @@ const AnalysisScreen: React.FC = () => {
           </SectionHeader>
 
           <CurrentMetricContainer>
-            <Typography variant="h1" color={theme.colors.primary} align="center" marginBottom="sm">
-              {mockHealthData.emotion.current}
+            <Typography variant="h1" color={theme.colors.primary} align="center">
+              {healthData.emotion.current}
+            </Typography>
+            <Typography variant="body1" align="center">
+              Current State
             </Typography>
           </CurrentMetricContainer>
 
-          <EmotionContainer>
-            <EmotionBubble emotion={mockHealthData.emotion.current}>
-              <Typography variant="h3" color={theme.colors.text.light} align="center">
-                {mockHealthData.emotion.current}
-              </Typography>
-            </EmotionBubble>
-          </EmotionContainer>
-
-          <EmotionScaleContainer>
-            <EmotionScaleItem emotion="Happy">
-              <EmotionDot emotion="Happy" active={mockHealthData.emotion.current === 'Happy'} />
-              <Typography variant="caption">Happy</Typography>
-            </EmotionScaleItem>
-            <EmotionScaleItem emotion="Calm">
-              <EmotionDot emotion="Calm" active={mockHealthData.emotion.current === 'Calm'} />
-              <Typography variant="caption">Calm</Typography>
-            </EmotionScaleItem>
-            <EmotionScaleItem emotion="Anxious">
-              <EmotionDot emotion="Anxious" active={mockHealthData.emotion.current === 'Anxious'} />
-              <Typography variant="caption">Anxious</Typography>
-            </EmotionScaleItem>
-            <EmotionScaleItem emotion="Stressed">
-              <EmotionDot emotion="Stressed" active={mockHealthData.emotion.current === 'Stressed'} />
-              <Typography variant="caption">Stressed</Typography>
-            </EmotionScaleItem>
-          </EmotionScaleContainer>
+          <EmotionalScaleContainer>
+            <EmotionalScale>
+              <EmotionalScaleItem active={healthData.emotion.current === 'Anxious'}>
+                <MaterialCommunityIcons name="emoticon-sad-outline" size={24} color={healthData.emotion.current === 'Anxious' ? theme.colors.primary : theme.colors.gray} />
+                <Typography variant="caption" color={healthData.emotion.current === 'Anxious' ? theme.colors.primary : theme.colors.gray}>
+                  Anxious
+                </Typography>
+              </EmotionalScaleItem>
+              <EmotionalScaleItem active={healthData.emotion.current === 'Calm'}>
+                <MaterialCommunityIcons name="emoticon-neutral-outline" size={24} color={healthData.emotion.current === 'Calm' ? theme.colors.primary : theme.colors.gray} />
+                <Typography variant="caption" color={healthData.emotion.current === 'Calm' ? theme.colors.primary : theme.colors.gray}>
+                  Calm
+                </Typography>
+              </EmotionalScaleItem>
+              <EmotionalScaleItem active={healthData.emotion.current === 'Happy'}>
+                <MaterialCommunityIcons name="emoticon-happy-outline" size={24} color={healthData.emotion.current === 'Happy' ? theme.colors.primary : theme.colors.gray} />
+                <Typography variant="caption" color={healthData.emotion.current === 'Happy' ? theme.colors.primary : theme.colors.gray}>
+                  Happy
+                </Typography>
+              </EmotionalScaleItem>
+            </EmotionalScale>
+          </EmotionalScaleContainer>
 
           <Typography variant="body1" marginTop="md">
-            Your emotional state has been predominantly positive, with occasional periods of anxiety. 
-            This is common during pregnancy, but do reach out to your healthcare provider if anxiety persists.
+            {emotionalAnalysis || "Your emotional state appears balanced. The data shows a healthy variation between calm and excited states, which is normal during pregnancy."}
           </Typography>
         </SectionCard>
 
+        {/* AI Suggestions Button */}
         <Button 
           title="View AI Suggestions" 
-          onPress={handleViewSuggestions} 
+          onPress={handleViewSuggestions}
           size="large"
           fullWidth
           marginTop="lg"
@@ -461,66 +521,19 @@ const StressLabels = styled(View)`
   margin-top: ${theme.spacing.xs}px;
 `;
 
-const EmotionContainer = styled(View)`
-  align-items: center;
-  margin-vertical: ${theme.spacing.md}px;
-`;
-
-const EmotionBubble = styled(View)<{ emotion: string }>`
-  width: 120px;
-  height: 120px;
-  border-radius: 60px;
-  justify-content: center;
-  align-items: center;
-  background-color: ${({ emotion }) => {
-    switch (emotion.toLowerCase()) {
-      case 'happy':
-        return theme.colors.success;
-      case 'calm':
-        return theme.colors.primary;
-      case 'anxious':
-        return theme.colors.warning;
-      case 'stressed':
-        return theme.colors.error;
-      default:
-        return theme.colors.secondary;
-    }
-  }};
-  ${theme.shadows.medium};
-`;
-
-const EmotionScaleContainer = styled(View)`
+const EmotionalScaleContainer = styled(View)`
   flex-direction: row;
   justify-content: space-around;
   margin-top: ${theme.spacing.md}px;
 `;
 
-const EmotionScaleItem = styled(View)<{ emotion: string }>`
+const EmotionalScale = styled(View)`
+  flex-direction: row;
   align-items: center;
 `;
 
-const EmotionDot = styled(View)<{ emotion: string; active: boolean }>`
-  width: ${({ active }) => active ? '20px' : '12px'};
-  height: ${({ active }) => active ? '20px' : '12px'};
-  border-radius: ${({ active }) => active ? '10px' : '6px'};
-  margin-bottom: ${theme.spacing.xs}px;
-  background-color: ${({ emotion }) => {
-    switch (emotion.toLowerCase()) {
-      case 'happy':
-        return theme.colors.success;
-      case 'calm':
-        return theme.colors.primary;
-      case 'anxious':
-        return theme.colors.warning;
-      case 'stressed':
-        return theme.colors.error;
-      default:
-        return theme.colors.secondary;
-    }
-  }};
-  ${({ active }) => active ? theme.shadows.small : ''};
-  border-width: ${({ active }) => active ? '2px' : '0'};
-  border-color: ${theme.colors.white};
+const EmotionalScaleItem = styled(View)<{ active: boolean }>`
+  align-items: center;
 `;
 
 export default AnalysisScreen; 

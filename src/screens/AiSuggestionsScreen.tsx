@@ -12,9 +12,13 @@ import Button from '../components/Button';
 import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import LoadingIndicator from '../components/LoadingIndicator';
+import { getAiSuggestions, AiSuggestionResponse, AnalysisResponse } from '../utils/apiService';
 
 type AiSuggestionsScreenRouteProp = RouteProp<RootStackParamList, 'AiSuggestions'>;
 type AiSuggestionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AiSuggestions'>;
+
+// Flag to toggle between mock data and real API data
+const USE_MOCK_DATA = true;
 
 // Enhanced mock data with more comprehensive suggestions
 const enhancedMockSuggestions = [
@@ -52,13 +56,76 @@ const enhancedMockSuggestions = [
   }
 ];
 
+// Mock analysis data for testing
+const mockAnalysisData: AnalysisResponse = {
+  timesES: [1, 2, 3, 4, 5],
+  bpmES: [75, 78, 80, 82, 79],
+  nni_seq: [800, 810, 790, 805, 795],
+  hrv_results: {
+    sdnn: 45,
+    rmssd: 42,
+    pnn50: 30,
+    lf: 1200,
+    hf: 900,
+    lf_hf_ratio: 1.33
+  },
+  week: 24
+};
+
 // This would be replaced with an actual API call in the future
 const fetchSuggestions = async (scanId?: string) => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Return enhanced mock data
-  return enhancedMockSuggestions;
+  if (USE_MOCK_DATA) {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Get AI suggestions using our API service
+    const historyResults = "Heart Rate: Normal\nHRV: Good\nStress: Medium\nEmotional: Balanced";
+    const aiSuggestions = await getAiSuggestions(mockAnalysisData, historyResults);
+    
+    // Convert to the format expected by the UI
+    return [
+      {
+        id: '1',
+        category: 'Stress Management',
+        title: 'Stress Management Recommendation',
+        description: aiSuggestions.stress_management || enhancedMockSuggestions[0].description,
+        importance: 'Medium',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        category: 'Physical Activity',
+        title: 'Physical Activity Recommendation',
+        description: aiSuggestions.physical_activity || enhancedMockSuggestions[1].description,
+        importance: 'High',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: '3',
+        category: 'Nutrition',
+        title: 'Nutrition Recommendation',
+        description: aiSuggestions.nutrition || enhancedMockSuggestions[2].description,
+        importance: 'Medium',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: '4',
+        category: 'Sleep',
+        title: 'Sleep Recommendation',
+        description: aiSuggestions.sleep || enhancedMockSuggestions[3].description,
+        importance: 'Low',
+        timestamp: new Date().toISOString(),
+      }
+    ];
+  } else {
+    // In a real app, you would fetch the suggestions from your backend
+    // For example:
+    // const response = await fetch(`http://your-api.com/suggestions/${scanId}`);
+    // return await response.json();
+    
+    // For now, return the enhanced mock data
+    return enhancedMockSuggestions;
+  }
 };
 
 const AiSuggestionsScreen: React.FC = () => {
