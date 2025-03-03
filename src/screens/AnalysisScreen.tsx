@@ -45,12 +45,13 @@ const getRandomVariation = (base: number, range: number): number => {
 };
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisScreenRouteProp>();
   const navigation = useNavigation<AnalysisScreenNavigationProp>();
   const scanId = route.params?.scanId;
+  const tempData = route.params?.tempData;
 
   const [loading, setLoading] = useState(true);
   const [healthData, setHealthData] = useState(mockHealthData);
@@ -143,11 +144,12 @@ const AnalysisScreen: React.FC = () => {
           setStressAnalysis(stress);
           setEmotionalAnalysis(emotional);
         } else {
-          // In a real app, you would fetch the analysis data from your backend
-          // For example:
-          // const response = await fetch(`http://your-api.com/analysis/${scanId}`);
-          // const data = await response.json();
-          // setAnalysisData(data);
+          setAnalysisData(tempData.savedData);
+          
+          setHeartRateAnalysis(tempData.heartBeatAnalysis);
+          setHrvAnalysis(tempData.hrvAnalysis);
+          setStressAnalysis(tempData.stressAnalysis);
+          setEmotionalAnalysis(getEmotionalStateAnalysis());
         }
       } catch (error) {
         console.error('Error fetching analysis data:', error);
@@ -184,7 +186,7 @@ const AnalysisScreen: React.FC = () => {
 
   const handleViewSuggestions = () => {
     // Now that AiSuggestions is in the RootStack, we can navigate directly
-    navigation.navigate('AiSuggestions', { scanId });
+    navigation.navigate('AiSuggestions', { scanId, tempData });
   };
 
   return (

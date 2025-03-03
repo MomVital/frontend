@@ -1,18 +1,29 @@
 import { mockUser, mockHealthData, mockAiSuggestions } from './mockData';
 
 // Configuration
-const USE_MOCK_BACKEND = true; // Set to false to use real backend
+const USE_MOCK_BACKEND = false; // Set to false to use real backend
 const BACKEND_BASE_URL = 'http://52.20.137.195:3000';
 const AI_BACKEND_BASE_URL = 'http://52.20.137.195:3001';
 const LOCAL_API_URL = 'http://localhost:8081/healthdata';
 
 // Types
 export interface AnalysisResponse {
-  timesES: number[];
-  bpmES: number[];
-  nni_seq: number[];
-  hrv_results: Record<string, number | string>;
+  bpms: number;
+  sdnn: number;
+  rmssd: number;
+  pnn50: number;
+  stress_level: number;
   week?: number;
+  stream?: boolean;
+}
+
+export interface TempData{
+  savedData: AnalysisResponse;
+  heartBeatAnalysis: string;
+  hrvAnalysis: string;
+  stressAnalysis: string;
+  emotionalAnalysis: string;
+  aiSuggestions: AiSuggestionResponse;
 }
 
 export interface AiSuggestionResponse {
@@ -70,7 +81,8 @@ export const getHeartBeatAnalysis = async (analysisData: AnalysisResponse): Prom
   }
   
   try {
-    const response = await fetch(`${AI_BACKEND_BASE_URL}/hb-analyze`, {
+    analysisData.stream = false;
+    const response = await fetch(`${AI_BACKEND_BASE_URL}/hb-analyze/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +95,8 @@ export const getHeartBeatAnalysis = async (analysisData: AnalysisResponse): Prom
     }
     
     const data = await response.json();
-    return data.analysis || '';
+    console.log(data);
+    return data || '';
   } catch (error) {
     console.error('[API] Error getting heart beat analysis:', error);
     return "Unable to analyze heart rate data. Please try again later.";
@@ -97,7 +110,8 @@ export const getHrvAnalysis = async (analysisData: AnalysisResponse): Promise<st
   }
   
   try {
-    const response = await fetch(`${AI_BACKEND_BASE_URL}/hrv-analyze`, {
+    analysisData.stream = false;
+    const response = await fetch(`${AI_BACKEND_BASE_URL}/hrv-analyze/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,7 +124,8 @@ export const getHrvAnalysis = async (analysisData: AnalysisResponse): Promise<st
     }
     
     const data = await response.json();
-    return data.analysis || '';
+    console.log(data);
+    return data || '';
   } catch (error) {
     console.error('[API] Error getting HRV analysis:', error);
     return "Unable to analyze HRV data. Please try again later.";
@@ -124,7 +139,8 @@ export const getStressAnalysis = async (analysisData: AnalysisResponse): Promise
   }
   
   try {
-    const response = await fetch(`${AI_BACKEND_BASE_URL}/stress-analyze`, {
+    analysisData.stream = false;
+    const response = await fetch(`${AI_BACKEND_BASE_URL}/stress-analyze/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,7 +153,8 @@ export const getStressAnalysis = async (analysisData: AnalysisResponse): Promise
     }
     
     const data = await response.json();
-    return data.analysis || '';
+    console.log(data);
+    return data || '';
   } catch (error) {
     console.error('[API] Error getting stress analysis:', error);
     return "Unable to analyze stress data. Please try again later.";
@@ -165,13 +182,13 @@ export const getAiSuggestions = async (
   }
   
   try {
-    const response = await fetch(`${AI_BACKEND_BASE_URL}/overall-analyze`, {
+    const response = await fetch(`${AI_BACKEND_BASE_URL}/overall-analyze/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        analysis_data: analysisData,
+        ...analysisData,
         history_result: historyResults
       }),
     });
@@ -180,7 +197,9 @@ export const getAiSuggestions = async (
       throw new Error(`Failed to get AI suggestions: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log(data.results);
+    return data.results
   } catch (error) {
     console.error('[API] Error getting AI suggestions:', error);
     // Return empty suggestions if there's an error
@@ -196,17 +215,10 @@ export const getAiSuggestions = async (
 // Process video analysis data
 export const processVideoAnalysis = async (
   analysisData: AnalysisResponse
-): Promise<{
-  savedData: AnalysisResponse;
-  heartBeatAnalysis: string;
-  hrvAnalysis: string;
-  stressAnalysis: string;
-  emotionalAnalysis: string;
-  aiSuggestions: AiSuggestionResponse;
-}> => {
+): Promise<TempData> => {
   try {
     // Step 1: Save the data with week added
-    const savedData = await saveAnalysisData(analysisData);
+    const savedData = addPregnancyWeekToData(analysisData);
     
     // Step 2: Get analyses in parallel
     const [heartBeatAnalysis, hrvAnalysis, stressAnalysis] = await Promise.all([

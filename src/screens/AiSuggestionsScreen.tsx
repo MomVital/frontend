@@ -12,13 +12,13 @@ import Button from '../components/Button';
 import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import LoadingIndicator from '../components/LoadingIndicator';
-import { getAiSuggestions, AiSuggestionResponse, AnalysisResponse } from '../utils/apiService';
+import { getAiSuggestions, AiSuggestionResponse, AnalysisResponse, TempData } from '../utils/apiService';
 
 type AiSuggestionsScreenRouteProp = RouteProp<RootStackParamList, 'AiSuggestions'>;
 type AiSuggestionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AiSuggestions'>;
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // Enhanced mock data with more comprehensive suggestions
 const enhancedMockSuggestions = [
@@ -189,7 +189,7 @@ const generateFreshSuggestions = () => {
 };
 
 // This would be replaced with an actual API call in the future
-const fetchSuggestions = async (scanId?: string) => {
+const fetchSuggestions = async (scanId?: string, tempData?: TempData) => {
   if (USE_MOCK_DATA) {
     // Simulate API call delay with random duration (1-3 seconds)
     const delay = 1000 + Math.random() * 2000;
@@ -225,13 +225,28 @@ const fetchSuggestions = async (scanId?: string) => {
     
     return freshSuggestions;
   } else {
-    // In a real app, you would fetch the suggestions from your backend
-    // For example:
-    // const response = await fetch(`http://your-api.com/suggestions/${scanId}`);
-    // return await response.json();
+    const freshSuggestions = generateFreshSuggestions();
+    const aiSuggestions = tempData.aiSuggestions;
+    if (aiSuggestions.stress_management || aiSuggestions.physical_activity || 
+      aiSuggestions.nutrition || aiSuggestions.sleep) {
     
-    // For now, return the enhanced mock data
-    return enhancedMockSuggestions;
+    if (aiSuggestions.stress_management) {
+      freshSuggestions[0].description = aiSuggestions.stress_management;
+    }
+    
+    if (aiSuggestions.physical_activity) {
+      freshSuggestions[1].description = aiSuggestions.physical_activity;
+    }
+    
+    if (aiSuggestions.nutrition) {
+      freshSuggestions[2].description = aiSuggestions.nutrition;
+    }
+    
+    if (aiSuggestions.sleep) {
+      freshSuggestions[3].description = aiSuggestions.sleep;
+    }
+  }
+    return freshSuggestions;
   }
 };
 
@@ -239,6 +254,7 @@ const AiSuggestionsScreen: React.FC = () => {
   const route = useRoute<AiSuggestionsScreenRouteProp>();
   const navigation = useNavigation<AiSuggestionsScreenNavigationProp>();
   const scanId = route.params?.scanId;
+  const tempData = route.params?.tempData;
   
   const [suggestions, setSuggestions] = useState(enhancedMockSuggestions);
   const [loading, setLoading] = useState(true);
@@ -248,7 +264,7 @@ const AiSuggestionsScreen: React.FC = () => {
     const loadSuggestions = async () => {
       try {
         setLoading(true);
-        const data = await fetchSuggestions(scanId);
+        const data = await fetchSuggestions(scanId, tempData);
         setSuggestions(data);
         setError(null);
       } catch (err) {
