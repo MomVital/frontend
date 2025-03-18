@@ -1,8 +1,10 @@
+import { TempData } from "../utils/apiService";
+
 export type RootStackParamList = {
   Home: undefined;
   Scan: undefined;
-  Analysis: { scanId?: string };
-  AiSuggestions: { scanId?: string };
+  Analysis: { scanId?: string, tempData?: TempData };
+  AiSuggestions: { scanId?: string, tempData?: TempData  };
   Profile: undefined;
   Registration: undefined;
   Settings: undefined;

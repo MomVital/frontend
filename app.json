@@ -6,6 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
+    "newArchEnabled": true,
+    "extra": {
+      "debug": false
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -43,7 +48,11 @@
         "xhdpi": "./assets/splash.png",
         "xxhdpi": "./assets/splash.png",
         "xxxhdpi": "./assets/splash.png"
-      }
+      },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/MomVital-logo.png"

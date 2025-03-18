@@ -15,13 +15,16 @@ import { theme } from '../theme/theme';
 import { RootStackParamList } from '../navigation/types';
 import LoadingIndicator from '../components/LoadingIndicator';
 import Card from '../components/Card';
-import { processVideoAnalysis, AnalysisResponse } from '../utils/apiService';
+import { processVideoAnalysis, AnalysisResponse, TempData } from '../utils/apiService';
+import { requestPermissionsAsync as requestAudioPermissionsAsync } from 'expo-av/build/Audio';
 
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
 // Backend API URL
 const API_URL = 'http://52.20.137.195:3000/analyze/';
-const USE_MOCK_BACKEND = true;
+
+import Constants from 'expo-constants';
+const USE_MOCK_BACKEND = Constants.expoConfig.extra.debug;
 
 // Generate random variation within a range
 const getRandomVariation = (base: number, range: number): number => {
@@ -33,33 +36,20 @@ const generateMockAnalysisData = (): AnalysisResponse => {
   // Base heart rate values with slight variations
   const baseBpm = 78;
   const bpmVariation = 5;
-  const bpmES = Array(5).fill(0).map(() => Math.round(getRandomVariation(baseBpm, bpmVariation)));
-  
-  // Base NNI sequence with slight variations
-  const baseNni = 800;
-  const nniVariation = 20;
-  const nni_seq = Array(5).fill(0).map(() => Math.round(getRandomVariation(baseNni, nniVariation)));
+  const bpmES = Math.round(getRandomVariation(baseBpm, bpmVariation));
   
   // Base HRV results with slight variations
   const sdnn = Math.round(getRandomVariation(45, 5));
   const rmssd = Math.round(getRandomVariation(42, 4));
   const pnn50 = Math.round(getRandomVariation(30, 3));
-  const lf = Math.round(getRandomVariation(1200, 100));
-  const hf = Math.round(getRandomVariation(900, 80));
-  const lf_hf_ratio = parseFloat((lf / hf).toFixed(2));
+  const stress_level = Math.round(getRandomVariation(0, 100));
   
   return {
-    timesES: [1, 2, 3, 4, 5],
-    bpmES: bpmES,
-    nni_seq: nni_seq,
-    hrv_results: {
-      sdnn: sdnn,
-      rmssd: rmssd,
-      pnn50: pnn50,
-      lf: lf,
-      hf: hf,
-      lf_hf_ratio: lf_hf_ratio
-    }
+    bpms: bpmES,
+    sdnn: sdnn,
+    rmssd: rmssd,
+    pnn50: pnn50,
+    stress_level: stress_level
   };
 };
 
@@ -84,6 +74,19 @@ const ScanScreen: React.FC = () => {
   // Log when camera ref is available
   useEffect(() => {
     console.log('[CAMERA] Camera ref initialized:', cameraRef.current ? 'YES' : 'NO');
+    if (!permission?.granted) {
+      requestPermission();
+    }
+
+    const temp = async () => {
+      return await requestAudioPermissionsAsync();
+    }
+    const audioStatus = temp();
+    if (audioStatus.status !== 'granted') {
+      console.warn('[AUDIO] Microphone permission not granted');
+    } else {
+      console.log('[AUDIO] Microphone permission granted');
+    }
   }, []);
   
   // Start animations when recording
@@ -181,12 +184,12 @@ const ScanScreen: React.FC = () => {
   };
 
   // Custom navigation function to handle the complex navigation
-  const navigateToAnalysis = (scanId: string) => {
+  const navigateToAnalysis = (scanId: string, data: TempData) => {
     console.log('[NAV] Attempting to navigate to Analysis with scanId:', scanId);
     
     try {
       // Use the same approach as in HomeScreen.tsx
-      navigation.navigate('Analysis', { scanId });
+      navigation.navigate('Analysis', { scanId, tempData:data });
       console.log('[NAV] Navigation to Analysis attempted');
     } catch (error) {
       console.error('[NAV] Navigation error:', error);
@@ -220,7 +223,7 @@ const ScanScreen: React.FC = () => {
       console.log('[MOCK] Generated mock scan ID:', mockScanId);
       
       // Use custom navigation function
-      navigateToAnalysis(mockScanId);
+      navigateToAnalysis(mockScanId, result);
     } catch (error) {
       console.error('[MOCK] Mock upload error:', error);
       Alert.alert(
@@ -276,16 +279,16 @@ const ScanScreen: React.FC = () => {
       
       // Process the analysis data
       const analysisData: AnalysisResponse = {
-        timesES: data.timesES || [],
-        bpmES: data.bpmES || [],
-        nni_seq: data.nni_seq || [],
-        hrv_results: data.hrv_results || {}
+        bpms: data.bpms || 0,
+        sdnn: data.sdnn || 0,
+        rmssd: data.rmssd || 0,
+        pnn50: data.pnn50 || 0,
+        stress_level: data.stress_level || 100
       };
-      
-      await processVideoAnalysis(analysisData);
+      const result = await processVideoAnalysis(analysisData);
       
       // Use custom navigation function
-      navigateToAnalysis(data.scanId);
+      navigateToAnalysis(data.scanId, result);
     } catch (error) {
       console.error('[UPLOAD] Failed to upload video:', error);
       
