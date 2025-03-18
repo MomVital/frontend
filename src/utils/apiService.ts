@@ -1,7 +1,8 @@
 import { mockUser, mockHealthData, mockAiSuggestions } from './mockData';
 
 // Configuration
-const USE_MOCK_BACKEND = false; // Set to false to use real backend
+import Constants from 'expo-constants';
+const USE_MOCK_BACKEND = Constants.expoConfig.extra.debug;
 const BACKEND_BASE_URL = 'http://52.20.137.195:3000';
 const AI_BACKEND_BASE_URL = 'http://52.20.137.195:3001';
 const LOCAL_API_URL = 'http://localhost:8081/healthdata';

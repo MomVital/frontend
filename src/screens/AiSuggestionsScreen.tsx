@@ -18,7 +18,9 @@ type AiSuggestionsScreenRouteProp = RouteProp<RootStackParamList, 'AiSuggestions
 type AiSuggestionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AiSuggestions'>;
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = true;
+
+import Constants from 'expo-constants';
+const USE_MOCK_DATA = Constants.expoConfig.extra.debug;
 
 // Enhanced mock data with more comprehensive suggestions
 const enhancedMockSuggestions = [

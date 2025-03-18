@@ -45,7 +45,8 @@ const getRandomVariation = (base: number, range: number): number => {
 };
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = true;
+import Constants from 'expo-constants';
+const USE_MOCK_DATA = Constants.expoConfig.extra.debug;
 
 const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisScreenRouteProp>();

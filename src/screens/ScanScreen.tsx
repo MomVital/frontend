@@ -16,12 +16,15 @@ import { RootStackParamList } from '../navigation/types';
 import LoadingIndicator from '../components/LoadingIndicator';
 import Card from '../components/Card';
 import { processVideoAnalysis, AnalysisResponse, TempData } from '../utils/apiService';
+import { requestPermissionsAsync as requestAudioPermissionsAsync } from 'expo-av/build/Audio';
 
 type ScanScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Scan'>;
 
 // Backend API URL
 const API_URL = 'http://52.20.137.195:3000/analyze/';
-const USE_MOCK_BACKEND = true;
+
+import Constants from 'expo-constants';
+const USE_MOCK_BACKEND = Constants.expoConfig.extra.debug;
 
 // Generate random variation within a range
 const getRandomVariation = (base: number, range: number): number => {
@@ -71,6 +74,19 @@ const ScanScreen: React.FC = () => {
   // Log when camera ref is available
   useEffect(() => {
     console.log('[CAMERA] Camera ref initialized:', cameraRef.current ? 'YES' : 'NO');
+    if (!permission?.granted) {
+      requestPermission();
+    }
+
+    const temp = async () => {
+      return await requestAudioPermissionsAsync();
+    }
+    const audioStatus = temp();
+    if (audioStatus.status !== 'granted') {
+      console.warn('[AUDIO] Microphone permission not granted');
+    } else {
+      console.log('[AUDIO] Microphone permission granted');
+    }
   }, []);
   
   // Start animations when recording
