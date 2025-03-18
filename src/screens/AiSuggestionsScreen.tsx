@@ -18,7 +18,7 @@ type AiSuggestionsScreenRouteProp = RouteProp<RootStackParamList, 'AiSuggestions
 type AiSuggestionsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AiSuggestions'>;
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = false;
+const USE_MOCK_DATA = true;
 
 // Enhanced mock data with more comprehensive suggestions
 const enhancedMockSuggestions = [

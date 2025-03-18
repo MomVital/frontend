@@ -45,7 +45,7 @@ const getRandomVariation = (base: number, range: number): number => {
 };
 
 // Flag to toggle between mock data and real API data
-const USE_MOCK_DATA = false;
+const USE_MOCK_DATA = true;
 
 const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisScreenRouteProp>();
